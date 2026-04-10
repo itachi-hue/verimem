@@ -2,7 +2,7 @@
 
 # VeriMem
 
-**Local agent memory:** Chroma or FastStore, dense + BM25 hybrid, cross-encoder rerank, optional NLI and entity graph. No API keys on the core path.
+Local semantic memory: **Chroma** or **FastStore**, hybrid BM25 + dense, cross-encoder rerank, optional NLI / entity graph. No API keys on the core path.
 
 [![][version-shield]][release-link]
 [![][python-shield]][python-link]
@@ -13,9 +13,10 @@
 </div>
 
 ---
+
 ## What it is
 
-Chunks text with `SentenceTransformer`; stores in **ChromaDB** or **FastStore**. **`recall()`**: `raw`, **BM25 hybrid**, **cross-encoder rerank**, **hybrid_rerank**, optional NLI / GLiNER + spaCy graph. Design lineage: [MemPalace](https://github.com/milla-jovovich/mempalace); this repo is independent.
+`SentenceTransformer` embeddings; storage in **ChromaDB** or **FastStore** (usearch + SQLite). Related ideas: [MemPalace](https://github.com/milla-jovovich/mempalace); this repo is separate.
 
 ---
 
@@ -23,9 +24,9 @@ Chunks text with `SentenceTransformer`; stores in **ChromaDB** or **FastStore**.
 
 ```bash
 pip install git+https://github.com/itachi-hue/verimem.git
-pip install "verimem[nli]"     # ONNX CE (~3× CPU rerank)
-pip install usearch            # optional FastStore
-pip install gliner             # optional entity graph
+pip install "verimem[nli]"     # ONNX rerank (faster on CPU)
+pip install usearch            # FastStore
+pip install gliner             # optional entities
 ```
 
 ```python
@@ -33,11 +34,10 @@ from verimem import Memory
 
 mem = Memory()
 mem.remember("Alice owns the auth service.")
-mem.remember("We moved MySQL to Postgres in Q1 2026.", topic="infra")
-print(mem.recall("what database?").to_simple())
+print(mem.recall("who owns auth?").to_simple())
 ```
 
-**Dev:** `pip install -e ".[dev]"` from repo root. `recall()` returns a **`ContextPacket`** — use **`.to_simple()`** for LLM text and **`.to_dict()`** for provenance, freshness, completeness, policy, and store revision.
+`pip install -e ".[dev]"` for dev. `recall()` returns **`ContextPacket`** (`.to_simple()` / `.to_dict()`).
 
 ---
 
@@ -45,80 +45,58 @@ print(mem.recall("what database?").to_simple())
 
 | `mode` | Behaviour |
 |--------|-----------|
-| **`rerank`** (default) | ANN → cross-encoder reorder (`ms-marco-MiniLM-L-6-v2`). |
-| **`raw`** | Dense retrieval only. |
-| **`hybrid`** | BM25 + dense fusion (reads store for BM25 stats). |
-| **`hybrid_rerank`** | Hybrid fusion, then cross-encoder. |
+| `rerank` (default) | ANN → `ms-marco-MiniLM-L-6-v2` cross-encoder |
+| `raw` | Dense only |
+| `hybrid` | BM25 + dense fusion |
+| `hybrid_rerank` | Hybrid then cross-encoder |
 
-**Benchmark-only modes (LongMemEval harness):** `rerank_bge_v2`, `hybrid_rerank_bge_v2`, `hybrid_rrf_bge_v2`.
-
-Extras: `verimem[nli]` for ONNX rerank; freshness decay; optional NLI.
+Install `verimem[nli]` for ONNX-backed rerank on CPU.
 
 ---
 
 ## Benchmarks
 
-Metrics are **session-level means** over all questions (ConvoMem-style): **recall_any@k** (≥1 gold in top-*k*), **recall@k** (gold-set coverage), **NDCG@k**, **all_gold_hit@k**. Full detail and repro: [`benchmarks/VERIMEM_BENCHMARKS.md`](benchmarks/VERIMEM_BENCHMARKS.md). Third-party numbers: [`benchmarks/BENCHMARKS.md`](benchmarks/BENCHMARKS.md).
+Metrics are **session-level means** (ConvoMem-style): **recall_any@k**, **recall@k** (gold-set coverage), **NDCG@k**, **all_gold_hit@k**. Extra detail and full @1–@50 LongMemEval breakdown: [`benchmarks/VERIMEM_BENCHMARKS.md`](benchmarks/VERIMEM_BENCHMARKS.md).
 
 ### LongMemEval — 500 questions
 
-**Setup:** `data/longmemeval_s_cleaned.json`, **embeddings** `all-MiniLM-L6-v2`, **rerank** `ms-marco-MiniLM-L-6-v2` where applicable. **Runs:** 2026-04-09–10.
+**Setup:** `data/longmemeval_s_cleaned.json`, embeddings `all-MiniLM-L6-v2`, rerank `ms-marco-MiniLM-L-6-v2` where applicable. **Runs:** 2026-04-09–10.
 
-**recall_any**
+#### @5
 
-| @k | `raw` | `hybrid` | `rerank` | `hybrid_rerank` |
-|:--:|:-----:|:--------:|:--------:|:---------------:|
-| 1 | 0.806 | 0.888 | 0.920 | **0.924** |
-| 3 | 0.926 | 0.964 | 0.976 | 0.976 |
-| 5 | 0.966 | 0.978 | 0.978 | 0.978 |
-| 10 | 0.982 | 0.992 | 0.990 | 0.986 |
-| 20 | 0.996 | 0.996 | 0.996 | 0.996 |
-| 50 | 1.000 | 1.000 | 1.000 | 1.000 |
+| Mode | recall_any | recall | NDCG | all_gold |
+| --- | ---: | ---: | ---: | ---: |
+| `raw` | 96.6% | 91.7% | 0.888 | 85.0% |
+| `hybrid` | 97.8% | 94.0% | 0.934 | 89.0% |
+| `rerank` | 97.8% | 95.2% | 0.951 | 91.4% |
+| `hybrid_rerank` | 97.8% | **95.3%** | **0.953** | **91.6%** |
 
-**recall** (gold-set coverage)
+#### @10
 
-| @k | `raw` | `hybrid` | `rerank` | `hybrid_rerank` |
-|:--:|:-----:|:--------:|:--------:|:---------------:|
-| 1 | 0.511 | 0.563 | 0.584 | **0.587** |
-| 3 | 0.839 | 0.893 | 0.920 | 0.926 |
-| 5 | 0.917 | 0.940 | 0.952 | 0.953 |
-| 10 | 0.962 | 0.976 | 0.976 | 0.977 |
-| 20 | 0.985 | 0.988 | 0.985 | 0.988 |
-| 50 | 1.000 | 1.000 | 1.000 | 1.000 |
+| Mode | recall_any | recall | NDCG | all_gold |
+| --- | ---: | ---: | ---: | ---: |
+| `raw` | 98.2% | 96.2% | 0.889 | 93.2% |
+| `hybrid` | 99.2% | 97.6% | 0.935 | 94.8% |
+| `rerank` | 99.0% | 97.6% | 0.953 | 95.6% |
+| `hybrid_rerank` | 98.6% | 97.7% | 0.953 | **96.4%** |
 
-**NDCG**
+#### @20
 
-| @k | `raw` | `hybrid` | `rerank` | `hybrid_rerank` |
-|:--:|:-----:|:--------:|:--------:|:---------------:|
-| 1 | 0.806 | 0.888 | 0.920 | **0.924** |
-| 3 | 0.874 | 0.932 | 0.953 | 0.954 |
-| 5 | 0.888 | 0.934 | 0.951 | 0.953 |
-| 10 | 0.889 | 0.935 | 0.953 | 0.953 |
-| 20 | 0.891 | 0.935 | 0.954 | **0.955** |
-| 50 | 0.890 | 0.934 | 0.951 | 0.954 |
-
-**all_gold_hit**
-
-| @k | `raw` | `hybrid` | `rerank` | `hybrid_rerank` |
-|:--:|:-----:|:--------:|:--------:|:---------------:|
-| 1 | 0.270 | 0.298 | 0.306 | **0.308** |
-| 3 | 0.734 | 0.798 | 0.846 | 0.858 |
-| 5 | 0.850 | 0.890 | 0.914 | **0.916** |
-| 10 | 0.932 | 0.948 | 0.956 | **0.964** |
-| 20 | 0.968 | 0.978 | 0.968 | **0.978** |
-| 50 | 1.000 | 1.000 | 1.000 | 1.000 |
-
-Reproduce aggregates from full-run JSONL: `python benchmarks/aggregate_longmemeval_jsonl.py benchmarks/results_longmemeval_<...>.jsonl`
+| Mode | recall_any | recall | NDCG | all_gold |
+| --- | ---: | ---: | ---: | ---: |
+| `raw` | 99.6% | 98.5% | 0.891 | 96.8% |
+| `hybrid` | 99.6% | 98.8% | 0.935 | 97.8% |
+| `rerank` | 99.6% | 98.5% | 0.954 | 96.8% |
+| `hybrid_rerank` | 99.6% | **98.8%** | **0.955** | **97.8%** |
 
 ```bash
 python benchmarks/longmemeval_bench.py data/longmemeval_s_cleaned.json --mode hybrid_rerank
+python benchmarks/aggregate_longmemeval_jsonl.py benchmarks/results_longmemeval_<mode>_session_<run>.jsonl
 ```
-
-External stack comparisons (different protocols): [`benchmarks/BENCHMARKS.md`](benchmarks/BENCHMARKS.md)
 
 ### ConvoMem — 300 items (6×50)
 
-Full per-mode tables (**@1–@50**): [`benchmarks/convomem_results.md`](benchmarks/convomem_results.md).
+Full per-mode tables (**@1–@50**, legacy overlap, per-category): [`benchmarks/convomem_results.md`](benchmarks/convomem_results.md).
 
 #### @5
 
@@ -164,57 +142,43 @@ Full per-mode tables (**@1–@50**): [`benchmarks/convomem_results.md`](benchmar
 | `rerank_bge_v2` | ~975 s | ~3.25 s |
 | `hybrid_rrf_bge_v2` | ~835 s | ~2.78 s |
 
-### LoCoMo
-
-See [`benchmarks/BENCHMARKS.md`](benchmarks/BENCHMARKS.md) (hybrid + rerank baselines vs session baseline).
+```bash
+python benchmarks/convomem_bench.py --category all --limit 50 --mode hybrid_rerank
+```
 
 ---
 
 ## Performance
 
-Warm in-process cache, typical CPU, persistent store. Prefer **ONNX** rerank (`verimem[nli]`).
+Typical CPU, warm cache. ONNX rerank via `verimem[nli]`.
 
-| Call | Warm | Cold / first use |
-|------|------|------------------|
+| Call | Warm | Cold |
+|------|------|------|
 | `remember()` | ~23 ms | ~120 ms (model load) |
 | `recall` (`raw`) | ~2–3 ms | ~15–25 ms |
 | `recall` (`rerank`) | ~3 ms | ~40–50 ms |
 
-GPU: `Memory(..., device="cuda")` and `onnxruntime-gpu`. `python benchmarks/memory_perf_bench.py --device cuda`.
+GPU: `Memory(..., device="cuda")` + `onnxruntime-gpu`; `python benchmarks/memory_perf_bench.py --device cuda`.
 
 ---
 
-## Models (first download)
+## Models
 
-| Model | ~Size | Role |
-|-------|------:|------|
-| `all-MiniLM-L6-v2` | 90 MB | Embeddings |
-| `ms-marco-MiniLM-L-6-v2` | 22 MB | Rerank |
-| `BAAI/bge-reranker-v2-m3` | ~1.2 GB | BGE rerank (`rerank_bge_v2`, `hybrid_rerank_bge_v2`, `hybrid_rrf_bge_v2`) |
-| `cross-encoder/nli-MiniLM2-L6-H768` | 90 MB | NLI |
-| `urchade/gliner_small-v2.1` | 67 MB | Entities |
+| Model | Role |
+|-------|------|
+| `all-MiniLM-L6-v2` | Embeddings |
+| `ms-marco-MiniLM-L-6-v2` | Rerank |
+| `BAAI/bge-reranker-v2-m3` | BGE modes (see `convomem_results.md`) |
+| `cross-encoder/nli-MiniLM2-L6-H768` | Optional NLI |
+| `urchade/gliner_small-v2.1` | Optional entities |
 
 ---
 
 ## Requirements
 
-[`pyproject.toml`](pyproject.toml): Python 3.9–3.13, Chroma, sentence-transformers. Extras: `verimem[nli]`, `verimem[fast]`, `verimem[all]`, `verimem[dev]`.
+Python 3.9–3.13. See [`pyproject.toml`](pyproject.toml): `verimem[nli]`, `verimem[fast]`, `verimem[dev]`, etc.
 
----
-
-## Layout
-
-```
-verimem/     memory.py  recall.py  fast_store.py  reranker.py  background_nli.py  graph.py
-benchmarks/  longmemeval_bench.py  convomem_bench.py  …
-tests/
-```
-
----
-
-## Limits
-
-Light graph expansion; NLI/graph are async (first recall may show completeness flags). Not multi-tenant HA out of the box.
+Not a full graph database; NLI / graph are async (first recall may show completeness flags).
 
 ---
 
