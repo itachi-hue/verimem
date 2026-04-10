@@ -65,6 +65,8 @@ Both are real. Both are reproducible. Neither is the whole picture alone.
 
 ### ConvoMem (Salesforce, 75K+ QA pairs)
 
+VeriMem `convomem_bench.py` — **300-item BGE v2 runs** (golden-id @1–@50 + legacy overlap): [`convomem_results.md`](convomem_results.md)
+
 | System | Score | Notes |
 |---|---|---|
 | **MemPal** | **92.9%** | Verbatim text, semantic search |

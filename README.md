@@ -171,6 +171,17 @@ Canonical numbers from this repo’s own runs are summarized in [`benchmarks/VER
 
 **Takeaway:** local cross-encoder reranking lifts **R@1** by double digits vs raw dense retrieval (e.g. **80.6% → 92.0%**) while keeping **zero cloud LLM** calls. Hybrid helps the mid-funnel; rerank sharpens **top-of-list** quality (see NDCG).
 
+#### LongMemEval — session metrics (500 questions)
+
+`longmemeval_bench.py` supports **`raw`**, **`hybrid`**, **`rerank`** (dense pool + **MiniLM** cross-encoder), and **`hybrid_rerank`** — there is **no BGE / RRF mode** in that harness (BGE lives under `convomem_bench.py` only). **R@*k*** = recall_any; **NDCG@*k*** = `ndcg_any@k`. Source: [`benchmarks/VERIMEM_BENCHMARKS.md`](benchmarks/VERIMEM_BENCHMARKS.md).
+
+| Mode | R@1 | R@5 | R@10 | R@30 | NDCG@5 | NDCG@10 | NDCG@30 |
+|------|:---:|:---:|:----:|:----:|:------:|:-------:|:-------:|
+| `raw` | 80.6% | 96.6% | 98.2% | 99.6% | 0.888 | 0.889 | 0.889 |
+| `hybrid` | 88.8% | 97.8% | 99.2% | 99.8% | 0.934 | 0.935 | 0.933 |
+| `rerank` (MiniLM) | 92.0% | 97.8% | 99.0% | 99.6% | 0.951 | 0.953 | 0.951 |
+| `hybrid_rerank` (MiniLM) | 92.4% | 97.8% | 98.6% | 99.8% | 0.953 | 0.953 | 0.954 |
+
 Figures below are **as reported** in this repo’s `benchmarks/BENCHMARKS.md` (MemPal and other third-party claims) and from VeriMem’s own `longmemeval_bench.py` runs. **Protocols differ** (e.g. LLM rerank vs local cross-encoder, hybrid modes vs raw). Use them as orientation, not apples-to-apples without reading the scripts.
 
 **LongMemEval R@5 — what “rerank” means here**
@@ -236,6 +247,37 @@ python benchmarks/longmemeval_bench.py data/longmemeval_s_cleaned.json --mode hy
 
 ### ConvoMem (Salesforce; sampled runs in `convomem_bench.py`)
 
+Slice **6 × 50 = 300** items. Golden metrics (mean over items): **recall_any** = ≥1 gold corpus row in top‑*k*; **NDCG** = `ndcg@k`; **recall** = mean fraction of gold rows covered; **all_gold** = share of items where every gold row is in top‑*k*. Modes below: **`raw`**, **`hybrid`**, **`rerank`** (MiniLM CE), **`hybrid_rerank`** (MiniLM), **`rerank_bge_v2`** (BAAI/bge-reranker-v2-m3), **`hybrid_rrf_bge_v2`** (RRF of hybrid vs BGE CE on the pool). Cutoffs **@5, @10, @20**. More modes and timing: [`benchmarks/convomem_results.md`](benchmarks/convomem_results.md).
+
+| Mode | @5 recall_any | @5 NDCG | @5 recall | @5 all_gold |
+|------|:-------------:|:-------:|:---------:|:-----------:|
+| `raw` | 83.3% | 0.652 | 80.5% | 77.7% |
+| `hybrid` | 87.0% | 0.687 | 83.3% | 79.7% |
+| `rerank` (MiniLM) | 83.3% | 0.715 | 80.4% | 77.3% |
+| `hybrid_rerank` (MiniLM) | 83.3% | 0.714 | 80.4% | 77.3% |
+| `rerank_bge_v2` | 86.7% | 0.735 | 84.8% | 83.0% |
+| `hybrid_rrf_bge_v2` | **90.7%** | **0.735** | **87.8%** | **85.0%** |
+
+| Mode | @10 recall_any | @10 NDCG | @10 recall | @10 all_gold |
+|------|:--------------:|:--------:|:----------:|:------------:|
+| `raw` | 96.0% | 0.699 | 94.4% | 92.7% |
+| `hybrid` | 96.7% | 0.730 | 95.4% | 94.0% |
+| `rerank` (MiniLM) | 91.7% | 0.748 | 90.4% | 89.0% |
+| `hybrid_rerank` (MiniLM) | 91.3% | 0.746 | 90.1% | 88.7% |
+| `rerank_bge_v2` | 94.7% | 0.765 | 93.7% | 92.7% |
+| `hybrid_rrf_bge_v2` | **96.0%** | 0.762 | **95.4%** | **94.7%** |
+
+| Mode | @20 recall_any | @20 NDCG | @20 recall | @20 all_gold |
+|------|:--------------:|:--------:|:----------:|:------------:|
+| `raw` | 100.0% | 0.713 | 99.5% | 99.0% |
+| `hybrid` | 99.3% | 0.741 | 99.0% | 98.7% |
+| `rerank` (MiniLM) | 100.0% | 0.773 | 99.5% | 99.0% |
+| `hybrid_rerank` (MiniLM) | 99.3% | 0.770 | 99.0% | 98.7% |
+| `rerank_bge_v2` | **100.0%** | **0.780** | **99.5%** | **99.0%** |
+| `hybrid_rrf_bge_v2` | 99.3% | 0.772 | 99.0% | 98.7% |
+
+**External baselines (not VeriMem harness):**
+
 | System | Score | Notes |
 |--------|------:|---|
 | MemPal (reported) | **92.9%** | Verbatim + semantic search, multi-category sample |
@@ -247,7 +289,7 @@ python benchmarks/longmemeval_bench.py data/longmemeval_s_cleaned.json --mode hy
 
 ---
 
-**More detail, caveats, and reproducibility:** [`benchmarks/BENCHMARKS.md`](benchmarks/BENCHMARKS.md) · full mode-by-mode metrics: [`benchmarks/VERIMEM_BENCHMARKS.md`](benchmarks/VERIMEM_BENCHMARKS.md).
+**More detail, caveats, and reproducibility:** [`benchmarks/BENCHMARKS.md`](benchmarks/BENCHMARKS.md) · full mode-by-mode metrics: [`benchmarks/VERIMEM_BENCHMARKS.md`](benchmarks/VERIMEM_BENCHMARKS.md) · ConvoMem tables: [`benchmarks/convomem_results.md`](benchmarks/convomem_results.md).
 
 ---
 

@@ -1,0 +1,24 @@
+[
+  {
+    "question": "What color do I use for hot leads in my personal spreadsheet?",
+    "answer": "Green",
+    "category": "user_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "found": 1
+    }
+  },
+  {
+    "question": "What was the new CRM password you set last week?",
+    "answer": "Innovate$2024!Lead",
+    "category": "user_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "found": 1
+    }
+  }
+]

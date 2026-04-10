@@ -1,0 +1,32 @@
+[
+  {
+    "question": "What color do I use for hot leads in my personal spreadsheet?",
+    "answer": "Green",
+    "category": "user_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  }
+]

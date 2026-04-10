@@ -476,7 +476,7 @@ def run_benchmark(
         print("  Local CE:    cross-encoder/ms-marco-MiniLM-L-6-v2 (default)")
     print(f"{'─' * 60}\n")
 
-    ks = [1, 3, 5, 10, 30, 50]
+    ks = [1, 3, 5, 10, 20, 30, 50]
     metrics_session = {f"recall_any@{k}": [] for k in ks}
     metrics_session.update({f"recall_all@{k}": [] for k in ks})
     metrics_session.update({f"ndcg_any@{k}": [] for k in ks})
@@ -548,6 +548,7 @@ def run_benchmark(
             metrics_session[f"recall_all@{k}"].append(rl)
             metrics_session[f"ndcg_any@{k}"].append(nd)
             entry_metrics["session"][f"recall_any@{k}"] = ra
+            entry_metrics["session"][f"recall_all@{k}"] = rl
             entry_metrics["session"][f"ndcg_any@{k}"] = nd
 
             ra_t, rl_t, nd_t = evaluate_retrieval(rankings, turn_correct, corpus_ids, k)
@@ -555,6 +556,8 @@ def run_benchmark(
             metrics_turn[f"recall_all@{k}"].append(rl_t)
             metrics_turn[f"ndcg_any@{k}"].append(nd_t)
             entry_metrics["turn"][f"recall_any@{k}"] = ra_t
+            entry_metrics["turn"][f"recall_all@{k}"] = rl_t
+            entry_metrics["turn"][f"ndcg_any@{k}"] = nd_t
 
         per_type[qtype]["recall_any@5"].append(metrics_session["recall_any@5"][-1])
         per_type[qtype]["recall_any@10"].append(metrics_session["recall_any@10"][-1])

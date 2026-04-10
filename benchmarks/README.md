@@ -87,6 +87,8 @@ python benchmarks/convomem_bench.py --category user_evidence --limit 100
 python benchmarks/convomem_bench.py --category user_evidence --limit 10
 ```
 
+**Recorded results (300-item slice, BGE rerank + hybrid RRF):** [`convomem_results.md`](convomem_results.md)
+
 **Categories available:** `user_evidence`, `assistant_facts_evidence`, `changing_evidence`, `abstention_evidence`, `preference_evidence`, `implicit_connection_evidence`
 
 **Expected output (all categories, 50 each):**

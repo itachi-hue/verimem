@@ -1,0 +1,902 @@
+[
+  {
+    "question": "What color do I use for hot leads in my personal spreadsheet?",
+    "answer": "Green",
+    "category": "user_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "What was the new CRM password you set last week?",
+    "answer": "Innovate$2024!Lead",
+    "category": "user_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 0.6309297535714575,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 0.6309297535714575,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 0.6309297535714575,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 0.6309297535714575,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "I'm preparing for my follow-up call with Quantum Solutions. What was the name of the key decision-maker I identified there?",
+    "answer": "The name of the decision-maker you identified at Quantum Solutions is Mr. Abernathy.",
+    "category": "user_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "What is the new SaaS feature I decided to focus on pitching this month?",
+    "answer": "SyncFlow Analytics",
+    "category": "user_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "I'm reviewing my weekly performance stats. What did I mention my daily call quota was set to?",
+    "answer": "You mentioned your daily call quota was set to 120 calls.",
+    "category": "user_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "I'm finally getting around to that productivity hack you mentioned last week. Can you remind me of the specific automation tool and method you suggested for integrating my color-coded spreadsheet with our company's Salesforce CRM?",
+    "answer": "I suggested using Zapier to create an automation. The method involves setting up a 'Zap' where the trigger is a 'New or Updated Spreadsheet Row' in your sheet, and the action is to 'Create or Update a Record' in Salesforce, mapping your spreadsheet columns to the corresponding Salesforce fields.",
+    "category": "assistant_facts_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "Can you remind me of the specific opening line you suggested for my SaaS cold calls?",
+    "answer": "Hi [Prospect Name], this is Alex from InnovateLeads. The reason I'm calling is that I noticed your company is in a high-growth phase, and firms like yours often find our lead-gen tools can help scale without increasing headcount.",
+    "category": "assistant_facts_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 0.5,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 0.5,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 0.5,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 0.5,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "Can you remind me of the three-step framework you suggested for handling pricing objections?",
+    "answer": "The three-step framework for handling pricing objections is: Acknowledge, Reframe, Justify.",
+    "category": "assistant_facts_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "I'm drafting another follow-up for a lead that's gone cold. You gave me a great subject line for this situation before, one that was short and had a high open rate. What was it again?",
+    "answer": "The subject line I recommended was 'Quick question about our last chat'.",
+    "category": "assistant_facts_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "Can you remind me of the humming exercise you recommended for vocal warm-ups?",
+    "answer": "You should hum scales to warm up your voice before calls.",
+    "category": "assistant_facts_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "Just checking my schedule, do I have a follow-up call with DataWeave Inc. scheduled for this week?",
+    "answer": "No, you are no longer scheduled to call DataWeave Inc. Although you initially set a follow-up for Tuesday, the account was reassigned to Sarah, the senior account executive.",
+    "category": "changing_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 2,
+      "gold_size": 2,
+      "found": 2,
+      "metrics": {
+        "recall@5": 0.5,
+        "recall_any@5": 1.0,
+        "ndcg@5": 0.3065735963827292,
+        "all_gold_hit@5": 0.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 0.5249810332008933,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 0.5249810332008933,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 0.5249810332008933,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "Hey, just confirming, where is the monthly sales meeting being held?",
+    "answer": "The meeting has been changed to be fully remote and will be held as a company-wide virtual call.",
+    "category": "changing_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 2,
+      "gold_size": 2,
+      "found": 2,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "Who is the designated contact person at CloudSolutions?",
+    "answer": "The designated contact person is Sarah Jenkins.",
+    "category": "changing_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 2,
+      "gold_size": 2,
+      "found": 2,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 0.6934264036172708,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 0.6934264036172708,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 0.6934264036172708,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 0.6934264036172708,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "A potential client is asking about new product features. Can they get access to the Auto-Sync feature?",
+    "answer": "No, the Auto-Sync feature is not available. Its launch has been postponed indefinitely due to critical integration bugs.",
+    "category": "changing_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 2,
+      "gold_size": 2,
+      "found": 2,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "What is the commission percentage for deals closed this quarter?",
+    "answer": "7.5%",
+    "category": "changing_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 2,
+      "gold_size": 2,
+      "found": 2,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "What is the direct contact phone number for the 'QuantumCorp' lead that Alex mentioned?",
+    "answer": "There is no information in prior conversations to answer this question",
+    "category": "abstention_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "What is the specific numerical target for new leads or call volume that Alex needs to hit next quarter, as outlined in the recent team meeting?",
+    "answer": "There is no information in prior conversations to answer this question",
+    "category": "abstention_evidence",
+    "recall": 0.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 2,
+      "gold_size": 0,
+      "found": 0,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "Can you tell me the specific month and year Alex achieved his personal best in sales at StapleSource?",
+    "answer": "There is no information in prior conversations to answer this question",
+    "category": "abstention_evidence",
+    "recall": 0.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 0,
+      "found": 0,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "When is InnovateLeads planning to fully release the new CRM update with the enhanced lead scoring module?",
+    "answer": "There is no information in prior conversations to answer this question",
+    "category": "abstention_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 0.6309297535714575,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 0.6309297535714575,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 0.6309297535714575,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 0.6309297535714575,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "Could you list the exact steps, including specific field names or button clicks, Alex uses to log a call outcome in the company CRM?",
+    "answer": "There is no information in prior conversations to answer this question",
+    "category": "abstention_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "What CRM functionalities should I look into if I want a more visual way to manage my lead pipeline instead of using a spreadsheet?",
+    "answer": "The answer must recommend CRM features that allow for visual, customizable lead tracking to replace a spreadsheet. It should specifically suggest functionalities like Kanban-style boards, customizable deal stages, or visual pipelines that can be color-coded to represent different lead statuses (e.g., hot, follow-up, do not call). Examples of good recommendations include features like Salesforce's Path or HubSpot's custom deal stages. The response should NOT suggest generic CRM features like basic contact logging or standard reporting tools, as these do not address the user's stated preference for a specific, visual management system.",
+    "category": "preference_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "I've completely hit a wall this afternoon and my energy is flagging. What's a good way to structure the rest of my workday to power through my call list?",
+    "answer": "The response must recommend structuring the afternoon using the Pomodoro Technique. Specifically, it should suggest breaking tasks, like making calls, into focused 25-minute work periods separated by short 5-minute breaks. The recommendation should be actionable and explicitly mention this 25/5 minute split. Generic productivity advice (e.g., 'prioritize your tasks', 'take a longer walk') or suggesting significantly different time management methods (e.g., 90-minute deep work blocks) without acknowledging the user's stated preference would be considered incorrect.",
+    "category": "preference_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "I made a few important calls last week. Can you help me lay out a schedule for when I should send the follow-up emails for calls made on Monday, Wednesday, and Friday?",
+    "answer": "The response must generate a schedule that adheres to the user's stated preference for follow-up timing. For each call day provided, the corresponding follow-up email must be scheduled for exactly two business days later, in the morning. Specifically: the follow-up for the Monday call should be on Wednesday morning; the follow-up for the Wednesday call should be on Friday morning; and the follow-up for the Friday call should be on the following Tuesday morning. The response should not suggest follow-ups on weekends, on incorrect days (e.g., one day or three days later), or at times other than the morning.",
+    "category": "preference_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 0.38685280723454163,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 0.38685280723454163,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 0.38685280723454163,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 0.38685280723454163,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "I have a lead at a fintech company who's gone silent after our initial call. What's an effective follow-up strategy?",
+    "answer": "The user prefers a 'value-add' follow-up strategy. The response must recommend providing tangible value to the lead. Specifically, it should suggest finding and sending content relevant to the lead's industry, such as a recent article on fintech trends, a case study, or a white paper addressing a potential business challenge. The response should actively discourage generic, low-effort follow-ups like 'just checking in,' 'bumping this up,' or asking for an update without providing new information.",
+    "category": "preference_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 0.6309297535714575,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 0.6309297535714575,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 0.6309297535714575,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 0.6309297535714575,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "My manager wants to see my quarterly performance. How can I create a compelling report of my lead conversion rates?",
+    "answer": "The response must recommend a solution that involves exporting raw data from the CRM for external analysis. It should specifically suggest using spreadsheet software like Google Sheets or Microsoft Excel. The ideal answer will mention creating detailed, custom reports, pivot tables, or cross-referencing data within these external tools, aligning with the user's preference for detailed analysis that their CRM's built-in dashboard cannot provide. The response should AVOID suggesting to primarily or solely use the built-in reporting features of the CRM.",
+    "category": "preference_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 0.5,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 0.5,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 0.5,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 0.5,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "I need to get the new team-wide kick-off call on the calendar for next Tuesday. What would be a good time to schedule it for everyone?",
+    "answer": "A good response should acknowledge the previously mentioned time zone difference and propose meeting times that are considerate of all team members. It should suggest times that fall within reasonable business hours for both Alex's local time and the West Coast time zone (PST/PDT), which is 3 hours behind. For example, it could suggest a time like 11:00 AM or 12:00 PM in Alex's time zone, which would be 8:00 AM or 9:00 AM for the West Coast team. The response must avoid suggesting times that would be very early for the West Coast members (e.g., 9 AM for Alex, which is 6 AM for them) or late for Alex.",
+    "category": "implicit_connection_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "What should I focus on in my performance summary this month?",
+    "answer": "A good response should emphasize metrics that are quantifiable and data-driven, such as conversion rates, number of calls made, and follow-up success rates, considering the interim manager's preference for hard data.",
+    "category": "implicit_connection_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 8,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 0.0,
+        "recall_any@5": 0.0,
+        "ndcg@5": 0.0,
+        "all_gold_hit@5": 0.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 0.3562071871080222,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 0.3562071871080222,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 0.3562071871080222,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "What's a good tool to help streamline my email follow-ups?",
+    "answer": "A good response should acknowledge the current budget constraints and suggest free or existing tools that can be utilized without incurring additional costs. It should also consider recommending methods to optimize current processes using available resources.",
+    "category": "implicit_connection_evidence",
+    "recall": 0.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 0,
+      "metrics": {
+        "recall@5": 0.0,
+        "recall_any@5": 0.0,
+        "ndcg@5": 0.0,
+        "all_gold_hit@5": 0.0,
+        "recall@10": 0.0,
+        "recall_any@10": 0.0,
+        "ndcg@10": 0.0,
+        "all_gold_hit@10": 0.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 0.26264953503719357,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 0.26264953503719357,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "When is the best time to make my follow-up calls on Fridays?",
+    "answer": "A good response should consider Alex's mandatory training session on Friday afternoons and suggest times outside of this period, ideally in the morning or early afternoon before the training begins.",
+    "category": "implicit_connection_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 0.43067655807339306,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 0.43067655807339306,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 0.43067655807339306,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 0.43067655807339306,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  },
+  {
+    "question": "How can I ensure my data stays up-to-date without hitting any limits?",
+    "answer": "A good response should recognize the need to manage API call limits while maintaining data accuracy. It should suggest solutions like scheduling syncs during off-peak hours, batching updates, or using a more efficient data transfer method to avoid hitting the API call limit.",
+    "category": "implicit_connection_evidence",
+    "recall": 1.0,
+    "details": {
+      "retrieved_count": 10,
+      "evidence_count": 1,
+      "gold_size": 1,
+      "found": 1,
+      "metrics": {
+        "recall@5": 1.0,
+        "recall_any@5": 1.0,
+        "ndcg@5": 1.0,
+        "all_gold_hit@5": 1.0,
+        "recall@10": 1.0,
+        "recall_any@10": 1.0,
+        "ndcg@10": 1.0,
+        "all_gold_hit@10": 1.0,
+        "recall@20": 1.0,
+        "recall_any@20": 1.0,
+        "ndcg@20": 1.0,
+        "all_gold_hit@20": 1.0,
+        "recall@50": 1.0,
+        "recall_any@50": 1.0,
+        "ndcg@50": 1.0,
+        "all_gold_hit@50": 1.0
+      }
+    }
+  }
+]
