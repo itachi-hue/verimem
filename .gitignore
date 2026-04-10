@@ -7,3 +7,4 @@ __pycache__/
 mempal.yaml
 data/
 benchmarks/results_*.jsonl
+benchmarks/*.log
