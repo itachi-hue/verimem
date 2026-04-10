@@ -2,42 +2,20 @@
 
 # VeriMem
 
-### Local memory for AI agents — structured recall, optional rerank, NLI, and a small entity graph.
-
-<br>
+**Local agent memory:** Chroma or FastStore, dense + BM25 hybrid, cross-encoder rerank, optional NLI and entity graph. No API keys on the core path.
 
 [![][version-shield]][release-link]
 [![][python-shield]][python-link]
 [![][license-shield]][license-link]
 
-<br>
-
-[Quick start](#quick-start) · [Context packet](#what-you-get-back) · [Pipeline](#recall-pipeline) · [Benchmarks](#benchmarks) · [Performance](#performance) · [Limits](#what-it-does-not-do)
+[Quick start](#quick-start) · [Modes](#recall-modes) · [Benchmarks](#benchmarks) · [Performance](#performance)
 
 </div>
 
 ---
-
 ## What it is
 
-A Python library: chunk text, embed with `SentenceTransformer`, store in **ChromaDB** or (with `usearch`) a **SQLite + in-RAM HNSW** backend, retrieve with semantic search. On top of that: **local cross-encoder reranking**, **freshness decay**, **background NLI** for contradictions (cached in SQLite), and an optional **GLiNER + spaCy** entity graph. No API keys for the core path.
-
-**Install:** `pip install verimem` (or from source). Import the `verimem` package:
-
-```python
-from verimem import Memory
-
-mem = Memory()
-mem.remember("Alice manages the auth service. JWT expires in 24h.")
-mem.remember("We migrated from Postgres to MySQL in Q1 2026.", topic="infra")
-
-result = mem.recall("what database do we use?")
-print(result.to_simple())
-```
-
-### Positioning
-
-VeriMem is meant for **structured, trustworthy recall** for agents **without** sending your transcripts to a hosted memory API. The direction is **inspired by** the push for local, long-horizon agent memory—including work and ideas in the ecosystem such as **[MemPalace](https://github.com/milla-jovovich/mempalace)** and the **MemPal** LongMemEval lines—but this repository is an **independent implementation**: its own `Memory` API, retrieval modes (dense, hybrid, rerank), NLI, entity graph, and benchmark harness. We **benchmark against** MemPal and others; that is **not** the same as VeriMem being a drop-in fork of MemPalace.
+Chunks text with `SentenceTransformer`; stores in **ChromaDB** or **FastStore**. **`recall()`**: `raw`, **BM25 hybrid**, **cross-encoder rerank**, **hybrid_rerank**, optional NLI / GLiNER + spaCy graph. Design lineage: [MemPalace](https://github.com/milla-jovovich/mempalace); this repo is independent.
 
 ---
 
@@ -45,334 +23,204 @@ VeriMem is meant for **structured, trustworthy recall** for agents **without** s
 
 ```bash
 pip install git+https://github.com/itachi-hue/verimem.git
-pip install "verimem[nli]"    # optional: faster cross-encoder via ONNX (~3× CPU)
-pip install gliner            # entity graph (~67MB model)
-pip install usearch           # optional: faster persistent backend
+pip install "verimem[nli]"     # ONNX CE (~3× CPU rerank)
+pip install usearch            # optional FastStore
+pip install gliner             # optional entity graph
 ```
 
 ```python
 from verimem import Memory
 
-mem = Memory()                 # default ~/.verimem
-mem = Memory("/path/to/store")
-mem = Memory(":memory:")       # ephemeral (tests / notebooks)
-
-mem.remember("The payment service went down at 3pm.")
-mem.remember("Payment restored at 3:47pm.", topic="incidents")
-
-result = mem.recall("payment service status")
-print(result.to_simple())
-result.to_dict()               # full provenance + flags
-
-mem.recall_related("Alice", hops=1)   # entity graph (after background extraction)
-mem.forget(chunk_id)
-mem.count()
-mem.revision()                 # monotonic write counter (e.g. cache invalidation)
-mem.graph_stats()
+mem = Memory()
+mem.remember("Alice owns the auth service.")
+mem.remember("We moved MySQL to Postgres in Q1 2026.", topic="infra")
+print(mem.recall("what database?").to_simple())
 ```
 
-Console entry point: `verimem` prints a short usage hint (there is no interactive CLI).
-
-### Install from this repo (editable)
-
-Use a virtual environment, then from the repository root:
-
-```bash
-pip install -e .
-pip install -e ".[nli]"       # recommended: ONNX for cross-encoder + NLI
-pip install -e ".[fast]"      # optional: usearch + SQLite FastStore
-pip install -e ".[all]"       # nli + fast
-pip install -e ".[dev]"       # pytest + ruff
-```
-
-Smoke test: `python -c "from verimem import Memory; m=Memory(':memory:'); m.remember('hi'); print(m.recall('hi').to_simple())"`  
-CLI: `verimem` or `python -m verimem`.
-
-On **Windows**, if `pip install` fails building `chroma-hnswlib`, install [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or use a Python version where Chroma publishes a prebuilt wheel for your platform.
+**Dev:** `pip install -e ".[dev]"` from repo root. `recall()` returns a **`ContextPacket`** — use **`.to_simple()`** for LLM text and **`.to_dict()`** for provenance, freshness, completeness, policy, and store revision.
 
 ---
 
-## What you get back
-
-`recall()` returns a **`ContextPacket`**. Use **`.to_simple()`** for LLM-facing output, **`.to_dict()`** for debugging.
-
-### `.to_simple()`
-
-High-signal fields only: hit text, topic, similarity, human-readable age, contradiction strings when available, and `entities` if you used `include_graph=True`.
-
-### `.to_dict()`
-
-Includes `filed_at`, `freshness_score`, chunk id, `completeness` flags, `policy_version` (`"default"` / `"rerank"`), and `store_revision` (monotonic write counter for cache invalidation; this field was named `palace_revision` before v5.0).
-
-### `recall()` parameters
-
-```python
-mem.recall(
-    query,
-    top_k=5,
-    topic=None,
-    rerank=True,
-    rerank_pool=20,
-    min_similarity=0.0,
-    decay_days=30.0,      # 0 disables freshness tie-break
-    include_graph=False,
-)
-```
-
----
-
-## Recall pipeline
-
-`Memory.recall(..., mode=...)` picks how results are ranked (same four modes as `longmemeval_bench.py`):
+## Recall modes
 
 | `mode` | Behaviour |
 |--------|-----------|
-| **`rerank`** (default) | Dense search (ChromaDB or `FastStore` + embedding cache), then **cross-encoder** reorder (`ms-marco-MiniLM-L-6-v2`; core dependency). |
-| **`raw`** | Dense search only — no BM25, no cross-encoder. |
-| **`hybrid`** | Dense search, then **BM25 + dense fusion** over all stored chunks (higher latency at large N). |
+| **`rerank`** (default) | ANN → cross-encoder reorder (`ms-marco-MiniLM-L-6-v2`). |
+| **`raw`** | Dense retrieval only. |
+| **`hybrid`** | BM25 + dense fusion (reads store for BM25 stats). |
 | **`hybrid_rerank`** | Hybrid fusion, then cross-encoder. |
 
-**Rerank speed (same model, same scores):** without Optimum, the cross-encoder runs in PyTorch on CPU and can take hundreds of ms per query on a cold (query, chunk) cache. Install **`pip install verimem[nli]`** (pulls **Optimum ≥2.1** + ONNX Runtime; required for **PyTorch 2.9+**) so rerank uses **ONNX** — typically **~3× faster** on CPU, **no change** to weights or ranking intent.
+**Benchmark-only modes (LongMemEval harness):** `rerank_bge_v2`, `hybrid_rerank_bge_v2`, `hybrid_rrf_bge_v2`.
 
-Then: **freshness decay** re-orders by similarity × age (tie-break). Contradictions: **BackgroundNLI** scores pairs asynchronously (SQLite-cached); first run may set `contradiction_check_pending`.
-
-```python
-from verimem import Memory, RETRIEVAL_MODES, DEFAULT_RETRIEVAL_MODE
-
-mem = Memory()
-mem.recall("query", top_k=5, rerank_pool=20)  # default mode: rerank
-mem.recall("query", mode="hybrid", top_k=5, hybrid_lexical_weight=0.35)  # optional BM25 fusion
-```
-
-`recall(rerank=True/False)` still works but is **deprecated** in favour of `mode`.
-
-Hybrid modes scan **all** chunks in the store (for BM25 statistics) on each recall — fine for typical agent corpora; for very large indexes consider `raw` or `rerank` if you need to avoid full-store reads.
-
----
-
-## Entity graph
-
-Background worker: **GLiNER** (`urchade/gliner_small-v2.1`) + **spaCy** `en_core_web_sm` for light relation structure. Query with `recall_related()` or pass `include_graph=True` on `recall()`.
+Extras: `verimem[nli]` for ONNX rerank; freshness decay; optional NLI.
 
 ---
 
 ## Benchmarks
 
-### At a glance — LongMemEval (500 questions, session-level)
+Metrics are **session-level means** over all questions (ConvoMem-style): **recall_any@k** (≥1 gold in top-*k*), **recall@k** (gold-set coverage), **NDCG@k**, **all_gold_hit@k**. Full detail and repro: [`benchmarks/VERIMEM_BENCHMARKS.md`](benchmarks/VERIMEM_BENCHMARKS.md). Third-party numbers: [`benchmarks/BENCHMARKS.md`](benchmarks/BENCHMARKS.md).
 
-Canonical numbers from this repo’s own runs are summarized in [`benchmarks/VERIMEM_BENCHMARKS.md`](benchmarks/VERIMEM_BENCHMARKS.md) (`longmemeval_bench.py`). **Recall** = gold session in top-*k*; **NDCG** rewards putting it higher in the list.
+### LongMemEval — 500 questions
 
-| Mode | R@1 | R@3 | R@5 | R@10 | NDCG@5 (≈) |
-|------|:---:|:---:|:---:|:----:|:----------:|
-| **Raw** (dense only) | 80.6% | 92.6% | 96.6% | 98.2% | 0.89 |
-| **Hybrid** (dense + BM25) | 88.8% | 96.4% | 97.8% | 99.2% | 0.93 |
-| **Raw + local rerank** | **92.0%** | **97.6%** | **97.8%** | **99.0%** | **0.95** |
-| **Hybrid + local rerank** | **92.4%** | **97.6%** | **97.8%** | 98.6% | **0.95** |
+**Setup:** `data/longmemeval_s_cleaned.json`, **embeddings** `all-MiniLM-L6-v2`, **rerank** `ms-marco-MiniLM-L-6-v2` where applicable. **Runs:** 2026-04-09–10.
 
-**Takeaway:** local cross-encoder reranking lifts **R@1** by double digits vs raw dense retrieval (e.g. **80.6% → 92.0%**) while keeping **zero cloud LLM** calls. Hybrid helps the mid-funnel; rerank sharpens **top-of-list** quality (see NDCG).
+**recall_any**
 
-#### LongMemEval — session metrics (500 questions)
+| @k | `raw` | `hybrid` | `rerank` | `hybrid_rerank` |
+|:--:|:-----:|:--------:|:--------:|:---------------:|
+| 1 | 0.806 | 0.888 | 0.920 | **0.924** |
+| 3 | 0.926 | 0.964 | 0.976 | 0.976 |
+| 5 | 0.966 | 0.978 | 0.978 | 0.978 |
+| 10 | 0.982 | 0.992 | 0.990 | 0.986 |
+| 20 | 0.996 | 0.996 | 0.996 | 0.996 |
+| 50 | 1.000 | 1.000 | 1.000 | 1.000 |
 
-`longmemeval_bench.py` supports **`raw`**, **`hybrid`**, **`rerank`** (dense pool + **MiniLM** cross-encoder), and **`hybrid_rerank`** — there is **no BGE / RRF mode** in that harness (BGE lives under `convomem_bench.py` only). **R@*k*** = recall_any; **NDCG@*k*** = `ndcg_any@k`. Source: [`benchmarks/VERIMEM_BENCHMARKS.md`](benchmarks/VERIMEM_BENCHMARKS.md).
+**recall** (gold-set coverage)
 
-| Mode | R@1 | R@5 | R@10 | R@30 | NDCG@5 | NDCG@10 | NDCG@30 |
-|------|:---:|:---:|:----:|:----:|:------:|:-------:|:-------:|
-| `raw` | 80.6% | 96.6% | 98.2% | 99.6% | 0.888 | 0.889 | 0.889 |
-| `hybrid` | 88.8% | 97.8% | 99.2% | 99.8% | 0.934 | 0.935 | 0.933 |
-| `rerank` (MiniLM) | 92.0% | 97.8% | 99.0% | 99.6% | 0.951 | 0.953 | 0.951 |
-| `hybrid_rerank` (MiniLM) | 92.4% | 97.8% | 98.6% | 99.8% | 0.953 | 0.953 | 0.954 |
+| @k | `raw` | `hybrid` | `rerank` | `hybrid_rerank` |
+|:--:|:-----:|:--------:|:--------:|:---------------:|
+| 1 | 0.511 | 0.563 | 0.584 | **0.587** |
+| 3 | 0.839 | 0.893 | 0.920 | 0.926 |
+| 5 | 0.917 | 0.940 | 0.952 | 0.953 |
+| 10 | 0.962 | 0.976 | 0.976 | 0.977 |
+| 20 | 0.985 | 0.988 | 0.985 | 0.988 |
+| 50 | 1.000 | 1.000 | 1.000 | 1.000 |
 
-Figures below are **as reported** in this repo’s `benchmarks/BENCHMARKS.md` (MemPal and other third-party claims) and from VeriMem’s own `longmemeval_bench.py` runs. **Protocols differ** (e.g. LLM rerank vs local cross-encoder, hybrid modes vs raw). Use them as orientation, not apples-to-apples without reading the scripts.
+**NDCG**
 
-**LongMemEval R@5 — what “rerank” means here**
+| @k | `raw` | `hybrid` | `rerank` | `hybrid_rerank` |
+|:--:|:-----:|:--------:|:--------:|:---------------:|
+| 1 | 0.806 | 0.888 | 0.920 | **0.924** |
+| 3 | 0.874 | 0.932 | 0.953 | 0.954 |
+| 5 | 0.888 | 0.934 | 0.951 | 0.953 |
+| 10 | 0.889 | 0.935 | 0.953 | 0.953 |
+| 20 | 0.891 | 0.935 | 0.954 | **0.955** |
+| 50 | 0.890 | 0.934 | 0.951 | 0.954 |
 
-- **VeriMem 97.8% R@5** — yes, this is **with reranking**: a **local** cross-encoder (`ms-marco-MiniLM-L-6-v2`). No cloud LLM. Metric = gold session in the top-5 retrieved sessions (`--mode rerank` or `--mode hybrid_rerank` in `longmemeval_bench.py`).
-- **MemPal 96.6% R@5** — **no** rerank: raw Chroma embedding search only (the famous zero-API baseline).
-- **MemPal 99.4–100% R@5** — **yes, reranked**, but with **Claude Haiku / Sonnet** over the candidate list (`--llm-rerank` + hybrid/palace modes in their pipeline). Higher score, different cost and latency than VeriMem’s local rerank.
+**all_gold_hit**
 
-So MemPal’s best LongMemEval numbers **do** use reranking — **LLM** reranking. VeriMem sits between: **better than raw (96.6%)**, **below full LLM rerank (≈100%)**, without an API.
+| @k | `raw` | `hybrid` | `rerank` | `hybrid_rerank` |
+|:--:|:-----:|:--------:|:--------:|:---------------:|
+| 1 | 0.270 | 0.298 | 0.306 | **0.308** |
+| 3 | 0.734 | 0.798 | 0.846 | 0.858 |
+| 5 | 0.850 | 0.890 | 0.914 | **0.916** |
+| 10 | 0.932 | 0.948 | 0.956 | **0.964** |
+| 20 | 0.968 | 0.978 | 0.968 | **0.978** |
+| 50 | 1.000 | 1.000 | 1.000 | 1.000 |
 
-### LongMemEval — R@5 (500 questions, session-level retrieval)
-
-| System | R@5 | LLM / API | Notes |
-|--------|:---:|:---:|---|
-| MemPal hybrid v4 + Haiku rerank | **100%** | Yes | First reported 500/500; `longmemeval_bench.py --llm-rerank` |
-| MemPal hybrid v3 + Haiku rerank | 99.4% | Yes | — |
-| MemPal palace + Haiku rerank | 99.4% | Yes | — |
-| Supermemory ASMR (experimental) | ~99% | Yes | Not identical to production track |
-| **VeriMem + local rerank** | **97.8%** | **No** | `ms-marco-MiniLM` cross-encoder, this repo |
-| MemPal **raw** (Chroma, no rerank) | **96.6%** | **No** | Highest cited zero-LLM baseline in that doc |
-| Mastra Observational Memory | 94.87% | Yes | e.g. GPT-5-mini in published leaderboard |
-| Hindsight | 91.4% | Yes | Gemini-class judge / pipeline |
-| Supermemory (production) | ~85% | Yes | — |
-| Stella (dense retriever) | ~85% | No | Academic baseline |
-| Contriever | ~78% | No | — |
-| BM25 | ~70% | No | Sparse baseline |
-
-### LongMemEval — VeriMem vs MemPal raw (all R@k)
-
-Same benchmark family; VeriMem numbers from `longmemeval_bench.py --mode rerank` (and related modes) vs `--mode raw` (see `benchmarks/VERIMEM_BENCHMARKS.md`).
-
-| Setup | R@1 | R@3 | R@5 | R@10 |
-|------|:---:|:---:|:---:|:---:|
-| **VeriMem + local rerank** | **92.0%** | **97.6%** | **97.8%** | **99.0%** |
-| Raw retrieval, no rerank (same bench; **R@5 = 96.6%** matches published MemPal raw) | 80.6% | 92.6% | 96.6% | 98.2% |
-
-### LongMemEval — per-type R@10 (500q)
-
-| Question type | MemPal raw | VeriMem + local rerank |
-|----------------|:----------:|:----------------------:|
-| knowledge-update (n=78) | 100.0% | 100.0% |
-| multi-session (n=133) | 100.0% | 100.0% |
-| temporal-reasoning (n=133) | 97.0% | **99.2%** |
-| single-session-user (n=70) | 97.1% | **100.0%** |
-| single-session-preference (n=30) | 96.7% | 93.3% |
-| single-session-assistant (n=56) | 96.4% | 96.4% |
+Reproduce aggregates from full-run JSONL: `python benchmarks/aggregate_longmemeval_jsonl.py benchmarks/results_longmemeval_<...>.jsonl`
 
 ```bash
-# Default retrieval matches Memory(): rerank (dense + local CE). Other modes: raw, hybrid, hybrid_rerank.
 python benchmarks/longmemeval_bench.py data/longmemeval_s_cleaned.json --mode hybrid_rerank
 ```
 
-### LoCoMo (1,986 QA pairs, MemPal family — see `locomo_bench.py`)
+External stack comparisons (different protocols): [`benchmarks/BENCHMARKS.md`](benchmarks/BENCHMARKS.md)
 
-| Mode | R@5 | R@10 | LLM | Notes |
-|------|:---:|:---:|:---:|---|
-| Hybrid v5 + Sonnet rerank, top-50 | **100%** | **100%** | Yes | — |
-| bge-large + Haiku rerank, top-15 | — | 96.3% | Yes | — |
-| bge-large hybrid, top-10 | — | 92.4% | No | — |
-| Hybrid v5, top-10 | 83.7% | 88.9% | No | — |
-| Session baseline, top-10, no rerank | — | 60.3% | No | — |
-| Dialog baseline, top-10 | — | 48.0% | No | Harder granularity |
+### ConvoMem — 300 items (6×50)
 
-### ConvoMem (Salesforce; sampled runs in `convomem_bench.py`)
+Full per-mode tables (**@1–@50**): [`benchmarks/convomem_results.md`](benchmarks/convomem_results.md).
 
-Slice **6 × 50 = 300** items. Golden metrics (mean over items): **recall_any** = ≥1 gold corpus row in top‑*k*; **NDCG** = `ndcg@k`; **recall** = mean fraction of gold rows covered; **all_gold** = share of items where every gold row is in top‑*k*. Modes below: **`raw`**, **`hybrid`**, **`rerank`** (MiniLM CE), **`hybrid_rerank`** (MiniLM), **`rerank_bge_v2`** (BAAI/bge-reranker-v2-m3), **`hybrid_rrf_bge_v2`** (RRF of hybrid vs BGE CE on the pool). Cutoffs **@5, @10, @20**. More modes and timing: [`benchmarks/convomem_results.md`](benchmarks/convomem_results.md).
+#### @5
 
-| Mode | @5 recall_any | @5 NDCG | @5 recall | @5 all_gold |
-|------|:-------------:|:-------:|:---------:|:-----------:|
-| `raw` | 83.3% | 0.652 | 80.5% | 77.7% |
-| `hybrid` | 87.0% | 0.687 | 83.3% | 79.7% |
-| `rerank` (MiniLM) | 83.3% | 0.715 | 80.4% | 77.3% |
-| `hybrid_rerank` (MiniLM) | 83.3% | 0.714 | 80.4% | 77.3% |
-| `rerank_bge_v2` | 86.7% | 0.735 | 84.8% | 83.0% |
-| `hybrid_rrf_bge_v2` | **90.7%** | **0.735** | **87.8%** | **85.0%** |
+| Mode | recall_any | recall | NDCG | all_gold |
+| --- | ---: | ---: | ---: | ---: |
+| `raw` | 83.3% | 80.5% | 0.652 | 77.7% |
+| `hybrid` | 87.0% | 83.3% | 0.687 | 79.7% |
+| `rerank` | 83.3% | 80.4% | 0.715 | 77.3% |
+| `hybrid_rerank` | 83.3% | 80.4% | 0.714 | 77.3% |
+| `hybrid_rrf` | 86.0% | 82.9% | 0.714 | 79.7% |
+| `rerank_bge_v2` | 86.7% | 84.8% | 0.735 | 83.0% |
+| `hybrid_rrf_bge_v2` | **90.7%** | **87.8%** | **0.735** | **85.0%** |
 
-| Mode | @10 recall_any | @10 NDCG | @10 recall | @10 all_gold |
-|------|:--------------:|:--------:|:----------:|:------------:|
-| `raw` | 96.0% | 0.699 | 94.4% | 92.7% |
-| `hybrid` | 96.7% | 0.730 | 95.4% | 94.0% |
-| `rerank` (MiniLM) | 91.7% | 0.748 | 90.4% | 89.0% |
-| `hybrid_rerank` (MiniLM) | 91.3% | 0.746 | 90.1% | 88.7% |
-| `rerank_bge_v2` | 94.7% | 0.765 | 93.7% | 92.7% |
-| `hybrid_rrf_bge_v2` | **96.0%** | 0.762 | **95.4%** | **94.7%** |
+#### @10
 
-| Mode | @20 recall_any | @20 NDCG | @20 recall | @20 all_gold |
-|------|:--------------:|:--------:|:----------:|:------------:|
-| `raw` | 100.0% | 0.713 | 99.5% | 99.0% |
-| `hybrid` | 99.3% | 0.741 | 99.0% | 98.7% |
-| `rerank` (MiniLM) | 100.0% | 0.773 | 99.5% | 99.0% |
-| `hybrid_rerank` (MiniLM) | 99.3% | 0.770 | 99.0% | 98.7% |
-| `rerank_bge_v2` | **100.0%** | **0.780** | **99.5%** | **99.0%** |
-| `hybrid_rrf_bge_v2` | 99.3% | 0.772 | 99.0% | 98.7% |
+| Mode | recall_any | recall | NDCG | all_gold |
+| --- | ---: | ---: | ---: | ---: |
+| `raw` | 96.0% | 94.4% | 0.699 | 92.7% |
+| `hybrid` | 96.7% | 95.4% | 0.730 | 94.0% |
+| `rerank` | 91.7% | 90.4% | 0.748 | 89.0% |
+| `hybrid_rerank` | 91.3% | 90.1% | 0.746 | 88.7% |
+| `hybrid_rrf` | 96.0% | 94.5% | 0.753 | 93.0% |
+| `rerank_bge_v2` | 94.7% | 93.7% | 0.765 | 92.7% |
+| `hybrid_rrf_bge_v2` | **96.0%** | **95.4%** | 0.762 | **94.7%** |
 
-**External baselines (not VeriMem harness):**
+#### @20
 
-| System | Score | Notes |
-|--------|------:|---|
-| MemPal (reported) | **92.9%** | Verbatim + semantic search, multi-category sample |
-| Gemini long context | 70–82% | Full history in window |
-| Block extraction | 57–71% | LLM-processed blocks |
-| Mem0 (RAG-style) | 30–45% | LLM-extracted memories (per this repo’s benchmark doc) |
+| Mode | recall_any | recall | NDCG | all_gold |
+| --- | ---: | ---: | ---: | ---: |
+| `raw` | 100.0% | 99.5% | 0.713 | 99.0% |
+| `hybrid` | 99.3% | 99.0% | 0.741 | 98.7% |
+| `rerank` | 100.0% | 99.5% | 0.773 | 99.0% |
+| `hybrid_rerank` | 99.3% | 99.0% | 0.770 | 98.7% |
+| `hybrid_rrf` | 99.3% | 99.0% | 0.766 | 98.7% |
+| `rerank_bge_v2` | **100.0%** | **99.5%** | **0.780** | **99.0%** |
+| `hybrid_rrf_bge_v2` | 99.3% | 99.0% | 0.772 | 98.7% |
 
-**Per-category (MemPal, ConvoMem sample):** Assistant facts 100%, user facts 98%, abstention 91%, implicit connections 89.3%, preferences 86%.
+**ConvoMem wall time**
 
----
+| Mode | Wall time | Per item |
+| --- | ---: | ---: |
+| `hybrid_rrf` | ~721 s | ~2.4 s |
+| `rerank_bge_v2` | ~975 s | ~3.25 s |
+| `hybrid_rrf_bge_v2` | ~835 s | ~2.78 s |
 
-**More detail, caveats, and reproducibility:** [`benchmarks/BENCHMARKS.md`](benchmarks/BENCHMARKS.md) · full mode-by-mode metrics: [`benchmarks/VERIMEM_BENCHMARKS.md`](benchmarks/VERIMEM_BENCHMARKS.md) · ConvoMem tables: [`benchmarks/convomem_results.md`](benchmarks/convomem_results.md).
+### LoCoMo
+
+See [`benchmarks/BENCHMARKS.md`](benchmarks/BENCHMARKS.md) (hybrid + rerank baselines vs session baseline).
 
 ---
 
 ## Performance
 
-**Why it matters:** strong **R@1 / NDCG** only help agents if recall is also **fast enough** to sit in the tool loop. Below are representative **single-process** latencies on typical CPU hardware with a **warm** in-process cache (second and later queries in a session are often much cheaper).
+Warm in-process cache, typical CPU, persistent store. Prefer **ONNX** rerank (`verimem[nli]`).
 
-Typical CPU, persistent store, warm models. **Cache hit** = same query (embedding cache) or same `(query, chunk)` (rerank cache) in-process.
+| Call | Warm | Cold / first use |
+|------|------|------------------|
+| `remember()` | ~23 ms | ~120 ms (model load) |
+| `recall` (`raw`) | ~2–3 ms | ~15–25 ms |
+| `recall` (`rerank`) | ~3 ms | ~40–50 ms |
 
-| Call | Cache hit | Cache miss |
-|------|-----------|------------|
-| `remember()` | ~23 ms | ~120 ms first load |
-| `recall(rerank=False)` | ~2–3 ms | ~15–25 ms |
-| `recall(rerank=True)` | ~3 ms | ~40–50 ms |
-
-With **`usearch`** + `FastStore`, persistent ANN is in-RAM; without it, ChromaDB persists on disk (somewhat higher latency). Caches reset when the process exits; vectors and text stay on disk.
-
-**GPU:** pass `Memory(..., device="cuda")` (or `"auto"` when PyTorch is built with CUDA). Install a **CUDA** `torch` wheel (not `+cpu`) and `onnxruntime-gpu` (uninstall CPU `onnxruntime` first). With `onnxruntime-gpu`, ORT often lists TensorRT first; VeriMem forces **`CUDAExecutionProvider`** for the cross-encoder when `device=cuda` so rerank uses the GPU without a full TensorRT install. `python benchmarks/memory_perf_bench.py --device cuda` prints the resolved compute device.
+GPU: `Memory(..., device="cuda")` and `onnxruntime-gpu`. `python benchmarks/memory_perf_bench.py --device cuda`.
 
 ---
 
-## Models (local, after download)
+## Models (first download)
 
 | Model | ~Size | Role |
 |-------|------:|------|
-| `all-MiniLM-L6-v2` | 90 MB | Embeddings (cached per text) |
-| `ms-marco-MiniLM-L-6-v2` | 22 MB | Rerank (ONNX if `optimum[onnxruntime]`, else PyTorch) |
-| `cross-encoder/nli-MiniLM2-L6-H768` | 90 MB | NLI / contradictions |
-| `urchade/gliner_small-v2.1` | 67 MB | Entity mentions |
+| `all-MiniLM-L6-v2` | 90 MB | Embeddings |
+| `ms-marco-MiniLM-L-6-v2` | 22 MB | Rerank |
+| `BAAI/bge-reranker-v2-m3` | ~1.2 GB | BGE rerank (`rerank_bge_v2`, `hybrid_rerank_bge_v2`, `hybrid_rrf_bge_v2`) |
+| `cross-encoder/nli-MiniLM2-L6-H768` | 90 MB | NLI |
+| `urchade/gliner_small-v2.1` | 67 MB | Entities |
 
 ---
 
 ## Requirements
 
-Declared in [`pyproject.toml`](pyproject.toml). Summary:
-
-| | Packages | Purpose |
-|---|----------|---------|
-| **Core** | `chromadb>=0.5,<0.7`, `pyyaml>=6`, `sentence-transformers>=2.7` | `Memory()`, embeddings, cross-encoder rerank, BackgroundNLI |
-| **Python** | 3.9 – 3.13 | — |
-| **`verimem[nli]`** | `optimum[onnxruntime]` | Faster cross-encoder on CPU when ONNX loads (PyTorch fallback always available) |
-| **`verimem[fast]`** | `usearch` ≥2 | `FastStore` (Rust HNSW + SQLite) instead of Chroma-only persistence |
-| **`verimem[all]`** | `nli` + `fast` deps | Convenience extra for full optional stack |
-| **`verimem[spellcheck]`** | `autocorrect` | Optional (legacy extra; unused by core `Memory`) |
-| **Graph (manual)** | `gliner` · `spacy` + `en_core_web_sm` | Background entity / relation extraction |
-| **Dev** | `pytest` · `ruff` | `verimem[dev]` / `dependency-groups.dev` |
-
-Minimal install: `pip install verimem` (or from Git) → remember/recall, hybrid BM25, rerank modes, and NLI all work (models download on first use). Graph still needs `gliner` and the spaCy model installed separately.
+[`pyproject.toml`](pyproject.toml): Python 3.9–3.13, Chroma, sentence-transformers. Extras: `verimem[nli]`, `verimem[fast]`, `verimem[all]`, `verimem[dev]`.
 
 ---
 
-## Project layout
+## Layout
 
 ```
-verimem/
-  memory.py          Memory API
-  recall.py          ContextPacket, RecallHit, to_simple / to_dict
-  fast_store.py      usearch + SQLite (optional)
-  graph.py           MemoryGraph, BackgroundGraph
-  background_nli.py  NLI worker + SQLite cache
-  reranker.py        Cross-encoder + score cache
-  policy.py          Named presets (metadata / tooling)
-  revision.py        Write counter
-  cli.py             Prints library usage
-benchmarks/          LongMemEval, LoCoMo, ConvoMem runners
+verimem/     memory.py  recall.py  fast_store.py  reranker.py  background_nli.py  graph.py
+benchmarks/  longmemeval_bench.py  convomem_bench.py  …
 tests/
 ```
 
 ---
 
-## What it does not do
+## Limits
 
-- Not a full graph database; `recall_related()` is for light entity-centric expansion.
-- Not multi-tenant or horizontally scaled out of the box.
-- NLI and graph enrichment are **async**; first recall may not show all signals yet (`completeness` flags document that).
+Light graph expansion; NLI/graph are async (first recall may show completeness flags). Not multi-tenant HA out of the box.
 
 ---
 
 ## License
 
 [MIT](LICENSE). Copyright 2026 Vivek Rao.
-
-Redistributions must **preserve the copyright notice and permission text** in `LICENSE`. For academic or product write-ups that use VeriMem, please **cite this repository** (or an associated publication). If you discuss lineage or related work, credit community projects that informed the design—such as [MemPalace](https://github.com/milla-jovovich/mempalace)—when your work draws on their ideas or shared code.
 
 <!-- Link Definitions -->
 [version-shield]: https://img.shields.io/badge/version-5.0.0-4dc9f6?style=flat-square&labelColor=0a0e14

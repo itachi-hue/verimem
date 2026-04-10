@@ -1,78 +1,77 @@
 # VeriMem — LongMemEval benchmark report
 
 **Dataset:** LongMemEval-style evaluation, **500 questions** per mode.  
-**Metrics:** Mean over rows of `retrieval_results.metrics.session` (and turn recall where stored).  
-**Aggregated:** 2026-04-07 from local benchmark runs (result JSONLs since removed; this file is the canonical record).
+**Metrics (session-level):** Mean over rows of `retrieval_results.metrics.session` — **recall_any**, **recall** (gold-set coverage), **NDCG**, **all_gold_hit** at *k* ∈ {1, 3, 5, 10, 20, 50} (ConvoMem-aligned; no @30).
 
-**Bench retrieval modes** (only these; `--mode` on `longmemeval_bench.py`, default **hybrid**):
+**Source JSONLs (this repo):**
 
-| Mode | Meaning |
-|------|--------|
-| `hybrid` | Dense + BM25 fusion (default) |
-| `raw` | Dense / embedding search only |
-| `rerank` | Raw + local cross-encoder rerank |
-| `hybrid_rerank` | Hybrid + local cross-encoder rerank |
+| Mode | File |
+|------|------|
+| `raw` | `results_longmemeval_raw_session_20260409_2322.jsonl` |
+| `hybrid` | `results_longmemeval_hybrid_session_20260409_2340.jsonl` |
+| `rerank` | `results_longmemeval_rerank_session_20260409_2357.jsonl` |
+| `hybrid_rerank` | `results_longmemeval_hybrid_rerank_session_20260410_0034.jsonl` |
 
-The table below maps to: Raw, Hybrid, `rerank`, `hybrid_rerank` respectively.
+Re-aggregate: `python benchmarks/aggregate_longmemeval_jsonl.py <path.jsonl>`
 
 ---
 
-## Session-level — recall_any@k and ndcg_any@k
+## Session-level means
 
-| Metric | Raw | Hybrid | Raw + local rerank | Hybrid + local rerank |
-|--------|-----|--------|--------------------|------------------------|
-| recall@1 | 0.8060 | 0.8880 | 0.9200 | 0.9240 |
-| ndcg@1 | 0.8060 | 0.8880 | 0.9200 | 0.9240 |
-| recall@3 | 0.9260 | 0.9640 | 0.9760 | 0.9760 |
-| ndcg@3 | 0.8741 | 0.9319 | 0.9528 | 0.9537 |
-| recall@5 | 0.9660 | 0.9780 | 0.9780 | 0.9780 |
-| ndcg@5 | 0.8877 | 0.9337 | 0.9513 | 0.9530 |
-| recall@10 | 0.9820 | 0.9920 | 0.9900 | 0.9860 |
-| ndcg@10 | 0.8888 | 0.9354 | 0.9532 | 0.9526 |
-| recall@30 | 0.9960 | 0.9980 | 0.9960 | 0.9980 |
-| ndcg@30 | 0.8890 | 0.9332 | 0.9505 | 0.9535 |
-| recall@50 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
-| ndcg@50 | 0.8898 | 0.9335 | 0.9511 | 0.9537 |
+| k | Mode | recall_any | recall | NDCG | all_gold_hit |
+|---|------|------------|--------|------|--------------|
+| @1 | raw | 0.8060 | 0.5108 | 0.8060 | 0.2700 |
+| @1 | hybrid | 0.8880 | 0.5634 | 0.8880 | 0.2980 |
+| @1 | rerank | 0.9200 | 0.5837 | 0.9200 | 0.3060 |
+| @1 | hybrid_rerank | 0.9240 | 0.5867 | 0.9240 | 0.3080 |
+| @3 | raw | 0.9260 | 0.8389 | 0.8741 | 0.7340 |
+| @3 | hybrid | 0.9640 | 0.8928 | 0.9319 | 0.7980 |
+| @3 | rerank | 0.9760 | 0.9205 | 0.9528 | 0.8460 |
+| @3 | hybrid_rerank | 0.9760 | 0.9258 | 0.9537 | 0.8580 |
+| @5 | raw | 0.9660 | 0.9171 | 0.8877 | 0.8500 |
+| @5 | hybrid | 0.9780 | 0.9404 | 0.9337 | 0.8900 |
+| @5 | rerank | 0.9780 | 0.9522 | 0.9513 | 0.9140 |
+| @5 | hybrid_rerank | 0.9780 | 0.9528 | 0.9530 | 0.9160 |
+| @10 | raw | 0.9820 | 0.9617 | 0.8888 | 0.9320 |
+| @10 | hybrid | 0.9920 | 0.9760 | 0.9354 | 0.9480 |
+| @10 | rerank | 0.9900 | 0.9758 | 0.9532 | 0.9560 |
+| @10 | hybrid_rerank | 0.9860 | 0.9765 | 0.9526 | 0.9640 |
+| @20 | raw | 0.9960 | 0.9846 | 0.8909 | 0.9680 |
+| @20 | hybrid | 0.9960 | 0.9883 | 0.9346 | 0.9780 |
+| @20 | rerank | 0.9960 | 0.9846 | 0.9543 | 0.9680 |
+| @20 | hybrid_rerank | 0.9960 | 0.9883 | 0.9554 | 0.9780 |
+| @50 | raw | 1.0000 | 1.0000 | 0.8898 | 1.0000 |
+| @50 | hybrid | 1.0000 | 1.0000 | 0.9335 | 1.0000 |
+| @50 | rerank | 1.0000 | 1.0000 | 0.9511 | 1.0000 |
+| @50 | hybrid_rerank | 1.0000 | 1.0000 | 0.9537 | 1.0000 |
 
 ### Notes
 
-- **Hybrid** (dense + BM25) improves **R@1** and **NDCG@k** through mid cutoffs vs raw dense-only retrieval.
-- **Local rerank** strongly improves **R@1 / NDCG@1–10** vs raw; vs hybrid, rerank still lifts top-of-list quality (e.g. ndcg@1: 0.888 → 0.924 hybrid path).
-- **R@10:** hybrid + rerank (0.9860) is slightly below hybrid-only (0.9920) while **NDCG@10** remains higher than hybrid-only — consistent with rerank improving top ranks while occasionally demoting relevant items deeper in the list.
+- **Hybrid** lifts **R@1** and mid-cutoff NDCG vs **raw** dense retrieval.
+- **Local cross-encoder rerank** (`ms-marco-MiniLM-L-6-v2`) improves top-of-list quality vs raw; vs hybrid-only, rerank still helps **@1** (e.g. hybrid 0.888 → hybrid_rerank 0.924 ndcg@1 proxy via recall_any@1).
+- **`longmemeval_bench.py`** also supports **`rerank_bge_v2`**, **`hybrid_rerank_bge_v2`**, **`hybrid_rrf_bge_v2`**; add JSONLs here when full 500-Q runs are available.
 
 ---
 
-## Turn-level
+## Per question_type — session R@10 / NDCG@10
 
-Stored `metrics.turn` in these runs included **recall_any@**{1, 3, 5, 10, 30, 50} only — **no NDCG** at turn level in the serialized output.
-
-| recall_any@k | Raw | Hybrid | Raw + rerank | Hybrid + rerank |
-|----------------|-----|--------|--------------|-----------------|
-| @1 | 0.8060 | 0.8880 | 0.9200 | 0.9240 |
-| @3 | 0.9260 | 0.9640 | 0.9760 | 0.9760 |
-| @5 | 0.9660 | 0.9780 | 0.9780 | 0.9780 |
-| @10 | 0.9820 | 0.9920 | 0.9900 | 0.9860 |
-| @30 | 0.9960 | 0.9980 | 0.9960 | 0.9980 |
-| @50 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
-
----
-
-## Per question_type — session R@10 and NDCG@10
-
-| Type | n | Raw | Hybrid | Raw + rerank | Hybrid + rerank |
-|------|---|-----|--------|--------------|-----------------|
+| Type | n | Raw | Hybrid | + rerank | + hybrid_rerank |
+|------|---|-----|--------|----------|-----------------|
 | | | R@10 / N@10 | R@10 / N@10 | R@10 / N@10 | R@10 / N@10 |
-| knowledge-update | 78 | 1.0000 / 0.9440 | 1.0000 / 0.9864 | 1.0000 / 0.9964 | 1.0000 / 0.9953 |
-| multi-session | 133 | 1.0000 / 0.9139 | 1.0000 / 0.9474 | 1.0000 / 0.9749 | 1.0000 / 0.9746 |
-| single-session-assistant | 56 | 0.9643 / 0.9533 | 0.9643 / 0.9516 | 0.9643 / 0.9554 | 0.9643 / 0.9643 |
-| single-session-preference | 30 | 0.9667 / 0.8328 | 0.9667 / 0.8234 | 0.9333 / 0.7768 | 0.9000 / 0.7672 |
-| single-session-user | 70 | 0.9714 / 0.8472 | 1.0000 / 0.9510 | 1.0000 / 0.9789 | 1.0000 / 0.9789 |
-| temporal-reasoning | 133 | 0.9699 / 0.8386 | 0.9925 / 0.9038 | 0.9925 / 0.9314 | 0.9850 / 0.9287 |
-
-**single-session-preference** shows the largest **R@10 / NDCG@10** drop when reranking vs non-rerank baselines — worth investigating reordering behavior on that slice.
+| knowledge-update | 78 | 1.00 / 0.944 | 1.00 / 0.986 | 1.00 / 0.996 | 1.00 / 0.995 |
+| multi-session | 133 | 1.00 / 0.914 | 1.00 / 0.947 | 1.00 / 0.975 | 1.00 / 0.975 |
+| single-session-assistant | 56 | 0.964 / 0.953 | 0.964 / 0.952 | 0.964 / 0.955 | 0.964 / 0.964 |
+| single-session-preference | 30 | 0.967 / 0.833 | 0.967 / 0.823 | 0.933 / 0.777 | 0.900 / 0.767 |
+| single-session-user | 70 | 0.971 / 0.847 | 1.00 / 0.951 | 1.00 / 0.979 | 1.00 / 0.979 |
+| temporal-reasoning | 133 | 0.970 / 0.839 | 0.993 / 0.904 | 0.993 / 0.931 | 0.985 / 0.929 |
 
 ---
 
 ## Reproducing
 
-Run the LongMemEval harness in this repo (see `benchmarks/longmemeval_bench.py` and `benchmarks/README.md`) for each mode, then aggregate means from the emitted JSONL `retrieval_results.metrics.session` (and `turn` for recall).
+```bash
+python benchmarks/longmemeval_bench.py data/longmemeval_s_cleaned.json --mode raw
+python benchmarks/longmemeval_bench.py data/longmemeval_s_cleaned.json --mode hybrid_rerank
+```
+
+See [`benchmarks/README.md`](README.md) for options.
