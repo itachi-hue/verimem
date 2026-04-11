@@ -1,13 +1,10 @@
 """
-VeriMem ingest + recall performance (raw vs rerank by default; ``--both``).
+VeriMem ingest + recall performance (default recall mode follows ``Memory()``; use ``--both`` for raw+rerank).
 
 Sections
 --------
-1. **Ingest** — per ``remember()`` call on unique text (embedding **miss**), then the same
-   texts again (idempotent **hit**: lookup + skip, no re-embed).
-2. **Recall** — after filling a large corpus:
-   - **Query miss**: each timed call uses a **new** query string (cold query embedding).
-   - **Query hit**: repeated ``recall`` with one fixed query (warm query embedding).
+1. **Ingest** — per ``remember()`` on **unique** text only (embedding **miss** path each time).
+2. **Recall** — after filling a corpus: each timed call uses a **new** query string (query-embedding **miss**).
 
 Uses ``time.perf_counter``. NLI is primed before recall timing so lazy model load does not
 dominate the numbers.
@@ -114,17 +111,6 @@ def _run_recall_timed(mem: Memory, mode: str, queries: List[str], warmup: int) -
     return times
 
 
-def _run_recall_query_hit(mem: Memory, mode: str, query: str, prime_inner: int, repeats: int) -> List[float]:
-    for _ in range(prime_inner):
-        mem.recall(query, top_k=5, mode=mode, rerank_pool=20)
-    times: List[float] = []
-    for _ in range(repeats):
-        t0 = time.perf_counter()
-        mem.recall(query, top_k=5, mode=mode, rerank_pool=20)
-        times.append((time.perf_counter() - t0) * 1000.0)
-    return times
-
-
 def bench_ingest(ingest_n: int, seed: int, device: str) -> None:
     texts = _make_unique_ingest_texts(ingest_n, seed + 1000)
     tmp = tempfile.mkdtemp(prefix="verimem_ingest_bench_")
@@ -136,19 +122,12 @@ def bench_ingest(ingest_n: int, seed: int, device: str) -> None:
             mem.remember(t, source=f"ingest_{i // 25}", topic="general")
             miss_ms.append((time.perf_counter() - t0) * 1000.0)
 
-        hit_ms: List[float] = []
-        for i, t in enumerate(texts):
-            t0 = time.perf_counter()
-            mem.remember(t, source=f"ingest_{i // 25}", topic="general")
-            hit_ms.append((time.perf_counter() - t0) * 1000.0)
-
         total_s = sum(miss_ms) / 1000.0
         thr = len(texts) / total_s if total_s > 0 else 0.0
         print(f"\n  store: {tmp}")
         print(f"  compute device: {mem._compute_device}")
         print(f"  chunks after ingest: {mem.count()}")
         _summarize("ingest remember (embed MISS)", miss_ms)
-        _summarize("ingest remember (embed HIT idempotent)", hit_ms)
         print(f"  ingest MISS throughput: {thr:.1f} chunks/s (mean per call)")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -162,7 +141,6 @@ def bench_recall(
     seed: int,
     both_modes: bool,
     mode: str,
-    query_hit_repeats: int,
     device: str,
 ) -> None:
     corpus = _make_corpus(chunks, seed)
@@ -207,30 +185,19 @@ def bench_recall(
             r, ce = means_miss["raw"], means_miss["rerank"]
             print(f"\n  rerank/raw mean ratio (query miss): {ce / r if r > 0 else 0:.2f}x")
 
-        print(f"\n  --- recall: QUERY EMBEDDING HIT (same query ×{query_hit_repeats}) ---")
-        for m in modes:
-            if m == "raw":
-                q_fix = q_r
-            elif m == "rerank":
-                q_fix = q_ce
-            else:
-                q_fix = queries_hybrid[0]
-            ms = _run_recall_query_hit(mem, m, q_fix, prime_inner=3, repeats=query_hit_repeats)
-            _summarize(f"{m} recall (query HIT)", ms)
-
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(description="Benchmark VeriMem ingest + recall (miss vs hit)")
+    p = argparse.ArgumentParser(description="Benchmark VeriMem ingest + recall (miss paths only)")
     p.add_argument("--no-ingest", action="store_true", help="Skip ingest section")
     p.add_argument("--no-recall", action="store_true", help="Skip recall section")
     p.add_argument(
         "--ingest-n",
         type=int,
         default=60,
-        help="Unique texts for timed remember() miss then hit (0 = skip ingest)",
+        help="Unique texts for timed remember() embed-miss path (0 = skip ingest)",
     )
     p.add_argument("--chunks", type=int, default=500, help="Corpus size for recall tests")
     p.add_argument("--queries", type=int, default=60, help="Timed recall calls (unique queries, miss path)")
@@ -240,12 +207,6 @@ def main() -> None:
         type=int,
         default=20,
         help="Pre-roll hybrid+raw recalls to load NLI before recall timing",
-    )
-    p.add_argument(
-        "--query-hit-repeats",
-        type=int,
-        default=40,
-        help="Timed recall calls with same query (hit path)",
     )
     p.add_argument("--seed", type=int, default=42)
     p.add_argument(
@@ -275,15 +236,15 @@ def main() -> None:
     print(f"{'=' * 60}")
 
     if not args.no_ingest and args.ingest_n > 0:
-        print(f"\n{'─' * 60}")
+        print(f"\n{'-' * 60}")
         print("  INGEST")
-        print(f"{'─' * 60}")
+        print(f"{'-' * 60}")
         bench_ingest(args.ingest_n, args.seed, dev)
 
     if not args.no_recall:
-        print(f"\n{'─' * 60}")
+        print(f"\n{'-' * 60}")
         print("  RECALL")
-        print(f"{'─' * 60}")
+        print(f"{'-' * 60}")
         bench_recall(
             chunks=args.chunks,
             queries=args.queries,
@@ -292,7 +253,6 @@ def main() -> None:
             seed=args.seed,
             both_modes=args.both,
             mode=args.mode,
-            query_hit_repeats=args.query_hit_repeats,
             device=dev,
         )
 

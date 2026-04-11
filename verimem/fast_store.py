@@ -11,7 +11,7 @@ Why faster than ChromaDB:
     without re-running the embedding model.
 
 Latency (typical with usearch; varies by CPU):
-  dense query: low ms; default ``rerank`` adds a batched cross-encoder pass over the pool.
+  dense query: low ms; ``rerank`` / ``hybrid_rerank`` add a batched cross-encoder pass over the pool.
 
 Install:
   pip install usearch          # Rust HNSW, ~2MB wheel

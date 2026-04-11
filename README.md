@@ -51,7 +51,7 @@ print(mem.recall("who owns auth?").to_simple())
 |-----|------|------|
 | **`hits`** | Always | List of chunks. Each item has **`text`**, **`topic`** (from `remember(..., topic=...)` or `"general"`), **`similarity`** (cosine-style score in \([0,1]\)). **`age`** is added when the chunk has an ingest timestamp (e.g. `"3 hours ago"`, `"2 days ago"`). |
 | **`retrieval`** | Default (`include_uncertainty=True`) | Query-grounded signal: **`confidence`**, **`ambiguity`** (spread among top hits), **`insufficient_evidence`** (bool). If the match looks weak or ambiguous, an **`advisory`** string suggests hedging or clarifying before stating facts from memory alone. Set `include_uncertainty=False` to omit. |
-| **`contradictions`** | When NLI finds conflicting pairs among hits | List of **readable strings** (e.g. `"hit 0 vs hit 1: NLI contradiction (score=0.71) …"`). Omitted if none. On disk stores, scoring is usually **async** (cache); use `sync_contradictions=True` for batched NLI on the hot path (adds latency). |
+| **`contradictions`** | Always | List of **readable strings** when NLI surfaces conflicting pairs among hits; **`[]`** if none (optional content, stable key). On disk stores, scoring is usually **async** (cache); use `sync_contradictions=True` for batched NLI on the hot path (adds latency). |
 | **`note`** | When background NLI is still scoring | Short reminder to re-query if you need contradiction flags. |
 | **`entities`** | When `include_graph=True` and the graph has nodes for recalled chunks | Extra structured entity payload from GLiNER-backed extraction. |
 
@@ -73,6 +73,7 @@ Everything in **`to_simple()`**, plus structured data: **`query`**, **`served_at
       "age": "2 days ago"
     }
   ],
+  "contradictions": [],
   "retrieval": {
     "confidence": 0.71,
     "ambiguity": 0.2,
@@ -81,7 +82,7 @@ Everything in **`to_simple()`**, plus structured data: **`query`**, **`served_at
 }
 ```
 
-With weak retrieval, **`retrieval`** may include **`insufficient_evidence: true`** and an **`advisory`** string; **`contradictions`** / **`entities`** appear only when those features apply.
+**`contradictions`** is always present: use **`[]`** when there are no flags, or populated strings when NLI finds conflicts. With weak retrieval, **`retrieval`** may include **`insufficient_evidence: true`** and an **`advisory`** string. **`entities`** only appear when `include_graph=True` and data exists.
 
 ---
 
@@ -89,10 +90,10 @@ With weak retrieval, **`retrieval`** may include **`insufficient_evidence: true`
 
 | `mode` | Behaviour |
 |--------|-----------|
-| `rerank` (default) | ANN → `ms-marco-MiniLM-L-6-v2` cross-encoder |
+| `hybrid` (default) | Dense ANN → BM25 + dense fusion |
 | `raw` | Dense only |
-| `hybrid` | BM25 + dense fusion |
-| `hybrid_rerank` | Hybrid then cross-encoder |
+| `rerank` | Dense ANN → `ms-marco-MiniLM-L-6-v2` cross-encoder |
+| `hybrid_rerank` | Hybrid fusion → cross-encoder |
 
 Install `verimem[nli]` for ONNX-backed rerank on CPU.
 
@@ -194,15 +195,22 @@ python benchmarks/convomem_bench.py --category all --limit 50 --mode hybrid_rera
 
 ## Performance
 
-Typical CPU, warm cache. ONNX rerank via `verimem[nli]`.
+Numbers below are **miss paths only** (what you pay for new content and new queries): each timed `remember()` is **unique** text (embedding cache miss), and each timed `recall()` uses a **new** query string (query-embedding miss). Idempotent repeats and warm query-embedding hits are not reported. **One-time** process cold start (first model load) is excluded.
 
-| Call | Warm | Cold |
-|------|------|------|
-| `remember()` | ~23 ms | ~120 ms (model load) |
-| `recall` (`raw`) | ~2–3 ms | ~15–25 ms |
-| `recall` (`rerank`) | ~3 ms | ~40–50 ms |
+**Sample run** — `python benchmarks/memory_perf_bench.py --seed 42` then `python benchmarks/memory_perf_bench.py --seed 42 --both --no-ingest`; defaults `--ingest-n 60`, `--chunks 500`, `--queries 60`, ONNX rerank via `verimem[nli]`. **CUDA** (`--device auto` picked a GPU).
 
-GPU: `Memory(..., device="cuda")` + `onnxruntime-gpu`; `python benchmarks/memory_perf_bench.py --device cuda`.
+| Operation | Median | Mean | p95 |
+|-----------|-------:|-----:|----:|
+| `remember()` embed miss (n=60) | 15.5 ms | 36.4 ms | 142 ms |
+| `recall(..., mode="hybrid")` (n=60) | 37.5 ms | 56.8 ms | 106 ms |
+| `recall(..., mode="raw")` (n=60) | 26.5 ms | 37.6 ms | 72 ms |
+| `recall(..., mode="rerank")` (n=60) | 135 ms | 129 ms | 185 ms |
+
+Rerank vs raw **mean** latency ratio on that run: **~3.4×** (query-miss path).
+
+**Scaling.** Per-query work scales **approximately logarithmically** in corpus size \(N\), not linearly: **dense** retrieval uses an ANN index (graph search is typically \(O(\log N)\) in practice), **BM25** walks inverted lists (sublinear in \(N\) for typical queries), and **cross-encoder rerank** scores only a **fixed** candidate pool—so it does not grow with total chunks. **`remember()`** inserts one embedding at a time; index updates on common backends (HNSW-style) are also **logarithmic** (or amortized polylog) in \(N\), not a full rescan of the corpus.
+
+CPU: `python benchmarks/memory_perf_bench.py --device cpu`. Hybrid default recall: first command; raw vs rerank comparison: `--both --no-ingest`.
 
 ---
 

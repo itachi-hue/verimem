@@ -251,6 +251,8 @@ class TestMemoryGraphIntegration:
         result = mem.recall("what does auth service use?", mode="raw")
         simple = result.to_simple()
         assert "hits" in simple
+        assert "contradictions" in simple
+        assert simple["contradictions"] == []
         for h in simple["hits"]:
             assert "text" in h
             assert "similarity" in h  # kept — it's signal

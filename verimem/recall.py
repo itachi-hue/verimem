@@ -231,7 +231,8 @@ class ContextPacket:
 
         Keeps everything useful, removes internal noise:
           - text, topic, similarity, human-readable age
-          - contradictions as readable pairs ("hit 0 vs hit 2: NLI score 0.94")
+          - ``contradictions``: always present — list of readable strings when NLI
+            flags exist, otherwise ``[]``
           - note if contradiction check still running in background
           - graph entities if include_graph=True was passed to recall()
 
@@ -270,14 +271,13 @@ class ContextPacket:
 
         result: dict = {"hits": simple_hits}
 
-        if self.contradictions:
-            readable = []
-            for c in self.contradictions:
-                readable.append(
-                    f"hit {c.hit_a_idx} vs hit {c.hit_b_idx}: {c.reason} "
-                    f"(confidence {c.confidence:.2f}) — verify before acting"
-                )
-            result["contradictions"] = readable
+        readable: List[str] = []
+        for c in self.contradictions:
+            readable.append(
+                f"hit {c.hit_a_idx} vs hit {c.hit_b_idx}: {c.reason} "
+                f"(confidence {c.confidence:.2f}) — verify before acting"
+            )
+        result["contradictions"] = readable
 
         if self.completeness.contradiction_check_pending:
             result["note"] = (

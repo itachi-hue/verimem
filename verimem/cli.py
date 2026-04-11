@@ -6,6 +6,6 @@ def main() -> None:
     print("  from verimem import Memory")
     print("  mem = Memory()")
     print(
-        "  mem.remember('...'); mem.recall('...')  # default mode: rerank; or mode='raw' / 'hybrid' / 'hybrid_rerank'"
+        "  mem.remember('...'); mem.recall('...')  # default mode: hybrid; or mode='raw' / 'rerank' / 'hybrid_rerank'"
     )
     print("Docs: https://github.com/itachi-hue/verimem")

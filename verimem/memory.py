@@ -7,18 +7,18 @@ Two functions. No wings. No rooms. No YAML config.
 
     mem = Memory()                          # persists to ~/.verimem by default
     mem.remember("Postgres is the DB")      # ingest anything
-    result = mem.recall("what database?")   # → ContextPacket (default mode: rerank)
+    result = mem.recall("what database?")   # → ContextPacket (default mode: hybrid)
 
 Design decisions:
   - Text is chunked at 800 chars with 100-char overlap (same as miner.py).
   - Chunks are stored verbatim with a UTC timestamp and an optional topic tag.
-  - recall(..., mode=...) selects retrieval: rerank (default) = dense + local cross-encoder;
-    raw = dense only; hybrid / hybrid_rerank add BM25 fusion (optional). Same four modes
+  - recall(..., mode=...) selects retrieval: hybrid (default) = dense + BM25 fusion;
+    raw = dense only; rerank / hybrid_rerank add local cross-encoder. Same four modes
     as benchmarks/longmemeval_bench.py.
   - recall() pipeline (depends on mode):
-      rerank (default): dense search → cross-encoder → decay
+      hybrid (default): dense → BM25 fusion → decay (no CE unless hybrid_rerank)
       raw: dense search → decay (no BM25, no cross-encoder)
-      hybrid: dense → BM25 fusion → decay (no CE unless hybrid_rerank)
+      rerank: dense search → cross-encoder → decay
       hybrid_rerank: hybrid fusion → cross-encoder → decay
     Step 3 only reshuffles near-equal hits. A much more relevant older chunk still
     beats a less relevant new one. Set decay_days=0 to skip decay entirely.
@@ -28,7 +28,7 @@ Design decisions:
 For agents, the full API is:
 
     mem.remember(text, source=None, topic=None)             → list[str]  (chunk IDs)
-    mem.recall(query, top_k=5, decay_days=30)  → ContextPacket  # default: rerank
+    mem.recall(query, top_k=5, decay_days=30)  → ContextPacket  # default: hybrid
     mem.forget(chunk_id)                                    → None
     mem.count()                                             → int
     mem.revision()                                          → int  (monotonic write counter)
@@ -76,7 +76,7 @@ _DEFAULT_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
 # Recall: dense-only, hybrid (dense+BM25), or those plus local cross-encoder — same four modes as longmemeval_bench.
 RETRIEVAL_MODES = ("raw", "hybrid", "rerank", "hybrid_rerank")
-DEFAULT_RETRIEVAL_MODE = "rerank"
+DEFAULT_RETRIEVAL_MODE = "hybrid"
 
 
 def _resolve_recall_mode(mode: str, rerank: Optional[bool]) -> str:
@@ -737,8 +737,8 @@ class Memory:
         query        : what you want to remember
         top_k        : number of hits to return
         topic        : filter to a specific topic (set at remember() time)
-        mode         : ``rerank`` (dense + cross-encoder, default), ``raw`` (dense only),
-                       ``hybrid`` (dense + BM25), ``hybrid_rerank`` (hybrid + CE).
+        mode         : ``hybrid`` (dense + BM25 fusion, default), ``raw`` (dense only),
+                       ``rerank`` (dense + cross-encoder), ``hybrid_rerank`` (hybrid + CE).
         rerank       : deprecated; use ``mode`` instead. If set, maps to ``raw`` / ``rerank``.
         rerank_pool  : candidate pool size before cross-encoder; also dense fetch size for hybrid.
         hybrid_lexical_weight : BM25 weight in ``[0, 1]`` for hybrid modes (dense gets ``1 - w``).
