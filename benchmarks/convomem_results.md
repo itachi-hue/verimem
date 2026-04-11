@@ -220,6 +220,29 @@ Category order: Assistant Facts, User Facts, Changing Facts, Abstention, Implici
 
 ---
 
+## End-to-end Q&A (Claude Sonnet 4.5)
+
+[`convomem_qa_bench.py`](convomem_qa_bench.py) — retrieval **`hybrid_rrf_bge_v2`**, then answer generation and binary judge with **Claude Sonnet 4.5**.
+
+**Saved run:** [`results_convomem_qa_claude_20260410_2241.json`](results_convomem_qa_claude_20260410_2241.json) (2026-04-10, `top_k=10`, ~33 items/category, binary scoring).
+
+| | |
+| --- | ---: |
+| Items (successful) | 198 |
+| Judge accuracy | 90.4% (179 / 198) |
+| Mean retrieval recall@k | 0.97 |
+
+| Category | Accuracy | Retrieval recall |
+| --- | ---: | ---: |
+| user_evidence | 90.9% | 1.00 |
+| assistant_facts_evidence | 97.0% | 0.985 |
+| changing_evidence | 97.0% | 1.00 |
+| abstention_evidence | 78.8% | 0.97 |
+| preference_evidence | 87.9% | 0.909 |
+| implicit_connection_evidence | 90.9% | 0.955 |
+
+---
+
 ## Notes
 
 - **@1 / @3** in JSON: only the two BGE result files include those keys; the five MiniLM-path runs predate `METRIC_KS` including 1 and 3. Metrics at **@5–@50** are taken from stored `details.metrics` in each JSON.
