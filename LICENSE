@@ -19,3 +19,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Attribution
+
+VeriMem builds on ideas and related design from MemPalace
+(https://github.com/milla-jovovich/mempalace). MemPalace is licensed under the
+MIT License:
+
+  Copyright (c) 2026 MemPalace Contributors
+
+The MemPalace license terms are the same as the MIT License text at the top of
+this file.
+
+Python packages pulled in at install time (for example ChromaDB,
+sentence-transformers, and optional extras) remain under their respective
+licenses; see each package’s metadata and repository.
