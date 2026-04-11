@@ -49,9 +49,15 @@ from typing import Dict, List, Optional, Tuple
 
 import chromadb
 
-from .recall import CompletenessFlags, ContextPacket, RecallHit
+from .recall import (
+    CompletenessFlags,
+    ContextPacket,
+    ContradictionFlag,
+    RecallHit,
+    compute_retrieval_uncertainty,
+)
 from .revision import bump_revision, get_revision
-from .background_nli import BackgroundNLI
+from .background_nli import BackgroundNLI, score_contradictions_sync
 from .reranker import CrossEncoderReranker
 from .graph import MemoryGraph, BackgroundGraph, GraphRecallResult
 from .fast_store import FastStore, is_available as _usearch_available
@@ -553,6 +559,11 @@ class Memory:
         top_k: int,
         decay_days: float,
         include_graph: bool,
+        sync_contradictions: bool = False,
+        include_uncertainty: bool = True,
+        uncertainty_softmax_tau: float = 0.12,
+        uncertainty_min_confidence: float = 0.35,
+        uncertainty_min_best_similarity: float = 0.52,
     ) -> ContextPacket:
         if decay_days > 0:
             hits = sorted(hits, key=lambda h: h.freshness_score, reverse=True)
@@ -560,14 +571,25 @@ class Memory:
         if len(hits) >= top_k:
             completeness.hits_truncated = True
 
-        contradictions = []
-        if len(hits) >= 2 and not self._ephemeral:
-            nli = BackgroundNLI.for_store(self._path)
-            contradictions = nli.lookup(hits)
-            pending = nli.submit_hits(hits)
-            if pending and not contradictions:
-                completeness.contradiction_check_pending = True
-        elif len(hits) < 2:
+        contradictions: List[ContradictionFlag] = []
+        if len(hits) >= 2:
+            if sync_contradictions:
+                try:
+                    persist = not self._ephemeral
+                    contradictions = score_contradictions_sync(
+                        hits,
+                        store_path=self._path if persist else None,
+                        persist_cache=persist,
+                    )
+                except Exception as exc:
+                    logger.warning("Memory: sync contradiction scoring failed: %s", exc)
+            elif not self._ephemeral:
+                nli = BackgroundNLI.for_store(self._path)
+                contradictions = nli.lookup(hits)
+                pending = nli.submit_hits(hits)
+                if pending and not contradictions:
+                    completeness.contradiction_check_pending = True
+        if len(hits) < 2:
             completeness.contradiction_check_skipped = True
 
         graph_entities = None
@@ -583,6 +605,16 @@ class Memory:
                 if bg.pending_count() > 0:
                     completeness.contradiction_check_pending = True
 
+        retrieval_u = None
+        if include_uncertainty:
+            sims = [h.similarity for h in hits]
+            retrieval_u = compute_retrieval_uncertainty(
+                sims,
+                softmax_tau=uncertainty_softmax_tau,
+                min_confidence=uncertainty_min_confidence,
+                min_best_similarity=uncertainty_min_best_similarity,
+            )
+
         return ContextPacket(
             query=query,
             hits=hits,
@@ -591,6 +623,7 @@ class Memory:
             policy_version=policy_version,
             store_revision=self.revision(),
             graph_entities=graph_entities,
+            retrieval_uncertainty=retrieval_u,
         )
 
     # ------------------------------------------------------------------
@@ -690,6 +723,11 @@ class Memory:
         min_similarity: float = 0.0,
         decay_days: float = _DEFAULT_DECAY_DAYS,
         include_graph: bool = False,
+        sync_contradictions: bool = False,
+        include_uncertainty: bool = True,
+        uncertainty_softmax_tau: float = 0.12,
+        uncertainty_min_confidence: float = 0.35,
+        uncertainty_min_best_similarity: float = 0.52,
     ) -> ContextPacket:
         """
         Recall memories relevant to query.
@@ -707,6 +745,14 @@ class Memory:
         min_similarity: drop hits below this cosine similarity
         decay_days   : freshness half-life in days (default 30). Set to 0 to disable.
         include_graph : if True, attach entity nodes from recalled chunks to ``graph_entities``.
+        sync_contradictions : if True, run batched NLI on all eligible hit pairs **before** returning
+            (same model/threshold as background NLI). Adds latency (~tens of ms CPU for typical k);
+            persists to ``contradiction_cache.db`` on disk stores. Ignores async lookup/submit for this call.
+        include_uncertainty : if True (default), attach ``retrieval_uncertainty`` / ``retrieval`` in
+            ``to_dict()`` / ``to_simple()`` from hit similarities (entropy + best-match; advisory flag).
+        uncertainty_softmax_tau : temperature for softmax over hit similarities when computing ambiguity.
+        uncertainty_min_confidence : flag ``retrieval_insufficient`` if ``confidence_q`` is below this.
+        uncertainty_min_best_similarity : flag ``retrieval_insufficient`` if best hit similarity is below this.
 
         Returns
         -------
@@ -736,7 +782,18 @@ class Memory:
                 top_k,
             )
             return self._postprocess_recall(
-                query, hits, completeness, resolved, top_k, decay_days, include_graph
+                query,
+                hits,
+                completeness,
+                resolved,
+                top_k,
+                decay_days,
+                include_graph,
+                sync_contradictions,
+                include_uncertainty,
+                uncertainty_softmax_tau,
+                uncertainty_min_confidence,
+                uncertainty_min_best_similarity,
             )
 
         chroma_n = rerank_pool if use_ce else top_k
@@ -759,10 +816,32 @@ class Memory:
                     raw = self._col.query(**kwargs)
                 except Exception as e2:
                     logger.error("Memory.recall failed: %s", e2)
-                    return ContextPacket(query=query, completeness=completeness)
+                    return ContextPacket(
+                        query=query,
+                        completeness=completeness,
+                        retrieval_uncertainty=compute_retrieval_uncertainty(
+                            [],
+                            softmax_tau=uncertainty_softmax_tau,
+                            min_confidence=uncertainty_min_confidence,
+                            min_best_similarity=uncertainty_min_best_similarity,
+                        )
+                        if include_uncertainty
+                        else None,
+                    )
             else:
                 logger.error("Memory.recall failed: %s", e)
-                return ContextPacket(query=query, completeness=completeness)
+                return ContextPacket(
+                    query=query,
+                    completeness=completeness,
+                    retrieval_uncertainty=compute_retrieval_uncertainty(
+                        [],
+                        softmax_tau=uncertainty_softmax_tau,
+                        min_confidence=uncertainty_min_confidence,
+                        min_best_similarity=uncertainty_min_best_similarity,
+                    )
+                    if include_uncertainty
+                    else None,
+                )
 
         docs = raw["documents"][0]
         metas = raw["metadatas"][0]
@@ -775,6 +854,14 @@ class Memory:
                 query=query,
                 completeness=completeness,
                 store_revision=self.revision(),
+                retrieval_uncertainty=compute_retrieval_uncertainty(
+                    [],
+                    softmax_tau=uncertainty_softmax_tau,
+                    min_confidence=uncertainty_min_confidence,
+                    min_best_similarity=uncertainty_min_best_similarity,
+                )
+                if include_uncertainty
+                else None,
             )
 
         hits = []
@@ -806,7 +893,18 @@ class Memory:
             hits = hits[:top_k]
 
         return self._postprocess_recall(
-            query, hits, completeness, resolved, top_k, decay_days, include_graph
+            query,
+            hits,
+            completeness,
+            resolved,
+            top_k,
+            decay_days,
+            include_graph,
+            sync_contradictions,
+            include_uncertainty,
+            uncertainty_softmax_tau,
+            uncertainty_min_confidence,
+            uncertainty_min_best_similarity,
         )
 
     # ------------------------------------------------------------------

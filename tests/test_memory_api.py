@@ -190,6 +190,16 @@ class TestContextPacket:
         assert len(result.hits) == 0
 
 
+class TestSyncContradictions:
+    def test_sync_contradictions_smoke(self, tmp_path):
+        mem = Memory(path=str(tmp_path / "vm"))
+        mem.remember("The uptime guarantee is 99.9%.")
+        mem.remember("The uptime guarantee is 99.0% revised downward.")
+        r = mem.recall("uptime", top_k=2, mode="raw", sync_contradictions=True)
+        assert isinstance(r, ContextPacket)
+        assert len(r.hits) >= 2
+
+
 # ---------------------------------------------------------------------------
 # repr / count
 # ---------------------------------------------------------------------------

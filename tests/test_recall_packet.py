@@ -12,6 +12,7 @@ from verimem.recall import (
     ContradictionFlag,
     RecallHit,
     apply_freshness,
+    compute_retrieval_uncertainty,
     detect_contradictions,
 )
 from verimem.policy import (
@@ -80,6 +81,24 @@ class TestContextPacket:
         assert d["store_revision"] == 42
         assert d["policy_version"] == "tight"
         assert d["completeness"]["hits_truncated"] is True
+
+
+class TestRetrievalUncertainty:
+    def test_empty_similarities_insufficient(self):
+        u = compute_retrieval_uncertainty([])
+        assert u.retrieval_insufficient is True
+        assert u.confidence_q == 0.0
+        assert u.best_match_score == 0.0
+
+    def test_single_hit_no_ambiguity(self):
+        u = compute_retrieval_uncertainty([0.9])
+        assert u.ambiguity == 0.0
+        assert abs(u.confidence_q - 0.9) < 1e-6
+
+    def test_tied_hits_high_ambiguity(self):
+        u = compute_retrieval_uncertainty([0.8, 0.8, 0.8], softmax_tau=0.12)
+        assert u.ambiguity > 0.5
+        assert u.confidence_q < 0.8
 
 
 class TestPolicy:

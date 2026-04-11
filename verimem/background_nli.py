@@ -37,6 +37,11 @@ _CONTRADICTION_THRESHOLD = 0.5  # minimum contradiction softmax score to surface
 _MIN_SIMILARITY_FOR_NLI = 0.45  # skip pairs where both hits are low-confidence matches
 _QUEUE_TIMEOUT_S = 15  # worker drains until idle for this many seconds
 
+# Shared CrossEncoder for synchronous batched scoring (one load per process / model name).
+_sync_ce_lock = threading.Lock()
+_sync_ce_model = None
+_sync_ce_model_name: Optional[str] = None
+
 
 def _db_path(store_path: str) -> Path:
     return Path(store_path) / _DB_NAME
@@ -57,6 +62,116 @@ def _init_db(db: Path) -> None:
     """)
     con.commit()
     con.close()
+
+
+def score_contradictions_sync(
+    hits: List["RecallHit"],
+    *,
+    store_path: Optional[str] = None,
+    persist_cache: bool = True,
+    model_name: str = _DEFAULT_MODEL,
+) -> List["ContradictionFlag"]:
+    """
+    Score all eligible hit pairs in **one batched** cross-encoder forward (sync path).
+
+    Same eligibility and threshold as the background worker. Optionally persists rows to
+    ``contradiction_cache.db`` when ``store_path`` is set and not ``\":memory:\"``.
+    """
+    from .recall import ContradictionFlag  # local import
+
+    eligible = [h for h in hits if h.drawer_id and h.similarity >= _MIN_SIMILARITY_FOR_NLI]
+    if len(eligible) < 2:
+        return []
+
+    id_to_pos = {h.drawer_id: i for i, h in enumerate(hits) if h.drawer_id}
+    pair_rows: list[tuple[str, str, str, str]] = []
+    for i in range(len(eligible)):
+        for j in range(i + 1, len(eligible)):
+            ha, hb = eligible[i], eligible[j]
+            pair_rows.append((ha.drawer_id, ha.text, hb.drawer_id, hb.text))
+
+    try:
+        from sentence_transformers import CrossEncoder
+    except ImportError:
+        logger.debug("score_contradictions_sync: sentence-transformers not installed")
+        return []
+
+    global _sync_ce_model, _sync_ce_model_name
+    with _sync_ce_lock:
+        if _sync_ce_model is None or _sync_ce_model_name != model_name:
+            _sync_ce_model = CrossEncoder(model_name)
+            _sync_ce_model_name = model_name
+        model = _sync_ce_model
+
+    contra_idx = BackgroundNLI._get_contra_idx(model)
+    text_pairs = [(r[1], r[3]) for r in pair_rows]
+
+    try:
+        scores = model.predict(
+            text_pairs,
+            apply_softmax=True,
+            show_progress_bar=False,
+            batch_size=max(1, len(text_pairs)),
+        )
+    except Exception as exc:
+        logger.warning("score_contradictions_sync: predict failed: %s", exc)
+        return []
+
+    flags: List[ContradictionFlag] = []
+    now = datetime.now(timezone.utc).isoformat()
+
+    can_persist = bool(
+        persist_cache
+        and store_path
+        and store_path != ":memory:"
+    )
+    con = None
+    if can_persist:
+        try:
+            db = _db_path(store_path)
+            _init_db(db)
+            con = sqlite3.connect(str(db))
+        except Exception as exc:
+            logger.debug("score_contradictions_sync: cache open failed: %s", exc)
+            can_persist = False
+
+    for (id_a, _, id_b, _), score_row in zip(pair_rows, scores):
+        score_row_list = score_row
+        contra_score = float(score_row_list[contra_idx])
+        label_idx = int(score_row_list.argmax())
+        label_map = {contra_idx: "contradiction"}
+        label = label_map.get(label_idx, "non-contradiction")
+        if contra_score >= _CONTRADICTION_THRESHOLD:
+            label = "contradiction"
+        if can_persist and con is not None:
+            try:
+                con.execute(
+                    "INSERT OR REPLACE INTO nli_cache "
+                    "(id_a, id_b, label, score, checked_at) VALUES (?,?,?,?,?)",
+                    (id_a, id_b, label, contra_score, now),
+                )
+            except Exception as exc:
+                logger.debug("score_contradictions_sync: cache write failed: %s", exc)
+        if contra_score >= _CONTRADICTION_THRESHOLD:
+            ia = id_to_pos.get(id_a, 0)
+            ib = id_to_pos.get(id_b, 0)
+            flags.append(
+                ContradictionFlag(
+                    hit_a_idx=ia,
+                    hit_b_idx=ib,
+                    reason=f"NLI contradiction (score={contra_score:.2f})",
+                    confidence=round(contra_score, 3),
+                )
+            )
+
+    if con is not None:
+        try:
+            con.commit()
+            con.close()
+        except Exception:
+            pass
+
+    return flags
 
 
 class BackgroundNLI:

@@ -8,7 +8,7 @@ Local semantic memory: **Chroma** or **FastStore**, hybrid BM25 + dense, cross-e
 [![][python-shield]][python-link]
 [![][license-shield]][license-link]
 
-[Quick start](#quick-start) · [Modes](#recall-modes) · [Benchmarks](#benchmarks) · [Performance](#performance)
+[Quick start](#quick-start) · [Context packet](#context-packet) · [Modes](#recall-modes) · [Benchmarks](#benchmarks) · [Performance](#performance)
 
 </div>
 
@@ -37,7 +37,51 @@ mem.remember("Alice owns the auth service.")
 print(mem.recall("who owns auth?").to_simple())
 ```
 
-`pip install -e ".[dev]"` for dev. `recall()` returns **`ContextPacket`** (`.to_simple()` / `.to_dict()`).
+`pip install -e ".[dev]"` for dev.
+
+---
+
+## Context packet
+
+**What `recall` returns.** `mem.recall(...)` yields a **`ContextPacket`**. Use **`.to_simple()`** for LLM-facing JSON (minimal noise) and **`.to_dict()`** for debugging, provenance, and IDs.
+
+### `to_simple()` — default agent payload
+
+| Key | When | What |
+|-----|------|------|
+| **`hits`** | Always | List of chunks. Each item has **`text`**, **`topic`** (from `remember(..., topic=...)` or `"general"`), **`similarity`** (cosine-style score in \([0,1]\)). **`age`** is added when the chunk has an ingest timestamp (e.g. `"3 hours ago"`, `"2 days ago"`). |
+| **`retrieval`** | Default (`include_uncertainty=True`) | Query-grounded signal: **`confidence`**, **`ambiguity`** (spread among top hits), **`insufficient_evidence`** (bool). If the match looks weak or ambiguous, an **`advisory`** string suggests hedging or clarifying before stating facts from memory alone. Set `include_uncertainty=False` to omit. |
+| **`contradictions`** | When NLI finds conflicting pairs among hits | List of **readable strings** (e.g. `"hit 0 vs hit 1: NLI contradiction (score=0.71) …"`). Omitted if none. On disk stores, scoring is usually **async** (cache); use `sync_contradictions=True` for batched NLI on the hot path (adds latency). |
+| **`note`** | When background NLI is still scoring | Short reminder to re-query if you need contradiction flags. |
+| **`entities`** | When `include_graph=True` and the graph has nodes for recalled chunks | Extra structured entity payload from GLiNER-backed extraction. |
+
+Optional `recall` arguments that shape this: `top_k`, `topic`, `mode`, `decay_days`, `include_graph`, `include_uncertainty`, `sync_contradictions` (see `Memory.recall` docstring in `verimem/memory.py`).
+
+### `to_dict()` — full detail
+
+Everything in **`to_simple()`**, plus structured data: **`query`**, **`served_at`**, **`policy_version`**, **`store_revision`**, **`completeness`** (caps, filters, NLI pending), per-hit **`drawer_id`**, **`filed_at`**, **`ingest_age_seconds`**, **`freshness_score`**, structured **`contradictions`**, optional **`graph_entities`**, and **`retrieval_uncertainty`** (`confidence_q`, `best_match_score`, `margin`, `softmax_temperature`, flags).
+
+### Example (`to_simple()`)
+
+```json
+{
+  "hits": [
+    {
+      "text": "We moved MySQL to Postgres in Q1 2026.",
+      "topic": "infra",
+      "similarity": 0.89,
+      "age": "2 days ago"
+    }
+  ],
+  "retrieval": {
+    "confidence": 0.71,
+    "ambiguity": 0.2,
+    "insufficient_evidence": false
+  }
+}
+```
+
+With weak retrieval, **`retrieval`** may include **`insufficient_evidence: true`** and an **`advisory`** string; **`contradictions`** / **`entities`** appear only when those features apply.
 
 ---
 

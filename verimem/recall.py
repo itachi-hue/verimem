@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 
 # ---------------------------------------------------------------------------
@@ -67,6 +67,120 @@ class ContradictionFlag:
 
 
 @dataclass
+class RetrievalUncertainty:
+    """
+    Query-grounded retrieval confidence from hit similarities (no extra models).
+
+    ``confidence_q`` combines best-match strength with (1 - normalized entropy) over
+    the top-k score distribution. Use ``retrieval_insufficient`` for soft gating in prompts.
+    """
+
+    confidence_q: float
+    ambiguity: float  # normalized entropy in [0, 1]
+    weak_match: float  # 1 - s_1
+    best_match_score: float
+    margin: float  # s_1 - s_2, or 0 if fewer than 2 hits
+    retrieval_insufficient: bool
+    softmax_temperature: float
+
+    def to_dict(self) -> dict:
+        return {
+            "confidence_q": self.confidence_q,
+            "ambiguity": self.ambiguity,
+            "weak_match": self.weak_match,
+            "best_match_score": self.best_match_score,
+            "margin": self.margin,
+            "retrieval_insufficient": self.retrieval_insufficient,
+            "softmax_temperature": self.softmax_temperature,
+        }
+
+    def to_simple(self) -> dict:
+        out = {
+            "confidence": round(self.confidence_q, 4),
+            "ambiguity": round(self.ambiguity, 4),
+            "insufficient_evidence": self.retrieval_insufficient,
+        }
+        if self.retrieval_insufficient:
+            out["advisory"] = (
+                "Memory retrieval looks weak or ambiguous for this query — "
+                "treat hits as non-authoritative or ask a clarifying question before "
+                "stating facts from memory alone."
+            )
+        return out
+
+
+def _softmax_scores(scores: Sequence[float], tau: float) -> List[float]:
+    if tau <= 1e-9:
+        tau = 1e-9
+    scaled = [float(x) / tau for x in scores]
+    mx = max(scaled)
+    exps = [math.exp(v - mx) for v in scaled]
+    t = sum(exps)
+    return [e / t for e in exps]
+
+
+def compute_retrieval_uncertainty(
+    similarities: Sequence[float],
+    *,
+    softmax_tau: float = 0.12,
+    min_confidence: float = 0.35,
+    min_best_similarity: float = 0.52,
+) -> RetrievalUncertainty:
+    """
+    Derive a single confidence score and an ``insufficient`` flag from cosine-like
+    similarities in [0, 1] (one per hit). Scores are sorted descending internally.
+
+    * ``confidence_q = s_1 * (1 - ambiguity)`` where ``ambiguity`` is ``H(p)/log k``
+      over a softmax of scores (temperature ``softmax_tau``).
+    * ``retrieval_insufficient`` iff ``confidence_q < min_confidence`` or
+      ``s_1 < min_best_similarity``.
+    """
+    if not similarities:
+        return RetrievalUncertainty(
+            confidence_q=0.0,
+            ambiguity=0.0,
+            weak_match=1.0,
+            best_match_score=0.0,
+            margin=0.0,
+            retrieval_insufficient=True,
+            softmax_temperature=softmax_tau,
+        )
+
+    s_all = sorted(max(0.0, min(1.0, float(x))) for x in similarities)
+    s_all.reverse()
+    k = len(s_all)
+    s1 = s_all[0]
+    weak = 1.0 - s1
+    margin = (s1 - s_all[1]) if k >= 2 else 0.0
+
+    if k == 1:
+        amb = 0.0
+    else:
+        p = _softmax_scores(s_all, softmax_tau)
+        h = 0.0
+        for pi in p:
+            if pi > 0:
+                h -= pi * math.log(pi + 1e-12)
+        amb = h / math.log(k) if k > 1 else 0.0
+        amb = max(0.0, min(1.0, amb))
+
+    confidence_q = s1 * (1.0 - amb)
+    confidence_q = max(0.0, min(1.0, confidence_q))
+
+    insufficient = confidence_q < min_confidence or s1 < min_best_similarity
+
+    return RetrievalUncertainty(
+        confidence_q=round(confidence_q, 6),
+        ambiguity=round(amb, 6),
+        weak_match=round(weak, 6),
+        best_match_score=round(s1, 6),
+        margin=round(margin, 6),
+        retrieval_insufficient=insufficient,
+        softmax_temperature=softmax_tau,
+    )
+
+
+@dataclass
 class CompletenessFlags:
     """Honest accounting of any caps that were hit during recall."""
 
@@ -109,6 +223,7 @@ class ContextPacket:
     served_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     filters_applied: dict = field(default_factory=dict)
     graph_entities: Optional[List[dict]] = None  # populated when include_graph=True
+    retrieval_uncertainty: Optional[RetrievalUncertainty] = None
 
     def to_simple(self) -> dict:
         """
@@ -172,11 +287,14 @@ class ContextPacket:
         if self.graph_entities:
             result["entities"] = self.graph_entities
 
+        if self.retrieval_uncertainty:
+            result["retrieval"] = self.retrieval_uncertainty.to_simple()
+
         return result
 
     def to_dict(self) -> dict:
         """Full output — everything including provenance, IDs, flags."""
-        return {
+        d = {
             "query": self.query,
             "served_at": self.served_at,
             "policy_version": self.policy_version,
@@ -187,6 +305,9 @@ class ContextPacket:
             "contradictions": [c.to_dict() for c in self.contradictions],
             "graph_entities": self.graph_entities,
         }
+        if self.retrieval_uncertainty is not None:
+            d["retrieval_uncertainty"] = self.retrieval_uncertainty.to_dict()
+        return d
 
 
 # ---------------------------------------------------------------------------
