@@ -65,9 +65,7 @@ def main() -> None:
         print(_line("recall (async NLI path, default)", base))
         print(_line("recall + sync_contradictions=True", sync))
         print(_line("estimated sync NLI overhead (sync - base)", overhead))
-        print(
-            f"mean extra latency from sync contradictions: {statistics.mean(overhead):.1f}ms"
-        )
+        print(f"mean extra latency from sync contradictions: {statistics.mean(overhead):.1f}ms")
 
 
 if __name__ == "__main__":

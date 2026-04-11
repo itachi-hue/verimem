@@ -1,4 +1,5 @@
 """One-off: sequential vs batched CrossEncoder NLI latency (same model as BackgroundNLI)."""
+
 from __future__ import annotations
 
 import statistics
@@ -11,10 +12,7 @@ NUM_PAIRS = 45  # k=10 -> C(10,2)
 
 def _pairs() -> List[Tuple[str, str]]:
     """Synthetic pairs ~ chunk-sized (vary slightly to avoid pathological cache effects)."""
-    a = [
-        f"The SLA target is 99.{i}% for region {i % 7}."
-        for i in range(10)
-    ]
+    a = [f"The SLA target is 99.{i}% for region {i % 7}." for i in range(10)]
     b = [
         f"Service level was revised to 99.{(i + 3) % 10}% last quarter (item {i})."
         for i in range(10)
@@ -60,8 +58,12 @@ def main() -> None:
     print(f"batched   (single predict, batch_size={NUM_PAIRS}, {reps} reps): {_summ(bat_ms)}")
     ratio = statistics.mean(seq_ms) / statistics.mean(bat_ms)
     print(f"speedup (mean sequential / mean batched): {ratio:.2f}x")
-    print(f"extra cost if you added sync sequential CE for all pairs: ~{statistics.mean(seq_ms):.0f}ms mean on this machine")
-    print(f"extra cost if you added sync batched CE once:           ~{statistics.mean(bat_ms):.0f}ms mean on this machine")
+    print(
+        f"extra cost if you added sync sequential CE for all pairs: ~{statistics.mean(seq_ms):.0f}ms mean on this machine"
+    )
+    print(
+        f"extra cost if you added sync batched CE once:           ~{statistics.mean(bat_ms):.0f}ms mean on this machine"
+    )
 
 
 if __name__ == "__main__":

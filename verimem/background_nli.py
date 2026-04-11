@@ -120,11 +120,7 @@ def score_contradictions_sync(
     flags: List[ContradictionFlag] = []
     now = datetime.now(timezone.utc).isoformat()
 
-    can_persist = bool(
-        persist_cache
-        and store_path
-        and store_path != ":memory:"
-    )
+    can_persist = bool(persist_cache and store_path and store_path != ":memory:")
     con = None
     if can_persist:
         try:

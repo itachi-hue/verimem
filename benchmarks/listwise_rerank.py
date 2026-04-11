@@ -99,7 +99,9 @@ def _cross_encoder_rerank(
 
     if model_id not in _cross_encoders:
         try:
-            ce = CrossEncoder(model_id, trust_remote_code=True, model_kwargs={"torch_dtype": "auto"})
+            ce = CrossEncoder(
+                model_id, trust_remote_code=True, model_kwargs={"torch_dtype": "auto"}
+            )
         except (TypeError, ValueError):
             ce = CrossEncoder(model_id, trust_remote_code=True)
         _cross_encoders[model_id] = ce

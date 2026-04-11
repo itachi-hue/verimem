@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 METRIC_KS = (1, 3, 5, 10, 20, 50)

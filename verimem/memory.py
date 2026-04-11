@@ -183,7 +183,9 @@ def _get_st_model(model_name: str, device: str = "cpu"):
     return _st_model_cache[key]
 
 
-def _embed(text: str, model_name: str = _DEFAULT_EMBEDDING_MODEL, device: str = "cpu") -> List[float]:
+def _embed(
+    text: str, model_name: str = _DEFAULT_EMBEDDING_MODEL, device: str = "cpu"
+) -> List[float]:
     key = _cache_key(model_name, text)
     with _embedding_cache_lock:
         if key in _embedding_cache:
@@ -687,7 +689,9 @@ class Memory:
 
         if ids_to_add:
             # Embed all new chunks in one batched call (cached — same text never re-embedded)
-            embeddings_to_add = _embed_batch(docs_to_add, self._ef._model_name, self._compute_device)
+            embeddings_to_add = _embed_batch(
+                docs_to_add, self._ef._model_name, self._compute_device
+            )
             self._col.add(
                 ids=ids_to_add,
                 documents=docs_to_add,

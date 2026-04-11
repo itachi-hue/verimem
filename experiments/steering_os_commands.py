@@ -122,7 +122,9 @@ def smollm_instruct_baseline_and_steering(scale: float, layer: int) -> None:
 
     s = _normalize(last_hidden_from_messages(win_msgs) - last_hidden_from_messages(nix_msgs))
 
-    user_only = [{"role": "user", "content": "List files in the current directory. One shell command only."}]
+    user_only = [
+        {"role": "user", "content": "List files in the current directory. One shell command only."}
+    ]
     inputs = tokenizer.apply_chat_template(
         user_only, tokenize=True, return_tensors="pt", add_generation_prompt=True
     )
@@ -168,11 +170,20 @@ def smollm_instruct_baseline_and_steering(scale: float, layer: int) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--gpt2-scale", type=float, default=0.6, help="Steering strength for GPT-2 (try 0.3–1.0)")
+    p.add_argument(
+        "--gpt2-scale", type=float, default=0.6, help="Steering strength for GPT-2 (try 0.3–1.0)"
+    )
     p.add_argument("--gpt2-layer", type=int, default=10)
     p.add_argument("--smolm-scale", type=float, default=0.8, help="Steering strength for SmolLM2")
-    p.add_argument("--smolm-layer", type=int, default=8, help="Decoder layer (0..N-1); SmolLM2 360M has ~16 layers")
-    p.add_argument("--sample-gpt2", action="store_true", help="Use sampling on steered GPT-2 (often worse)")
+    p.add_argument(
+        "--smolm-layer",
+        type=int,
+        default=8,
+        help="Decoder layer (0..N-1); SmolLM2 360M has ~16 layers",
+    )
+    p.add_argument(
+        "--sample-gpt2", action="store_true", help="Use sampling on steered GPT-2 (often worse)"
+    )
     args = p.parse_args()
 
     print("Device:", "cuda" if torch.cuda.is_available() else "cpu")
@@ -184,7 +195,10 @@ def main() -> None:
     try:
         smollm_instruct_baseline_and_steering(scale=args.smolm_scale, layer=args.smolm_layer)
     except Exception as e:
-        print("\n[SmolLM2 section skipped or failed — install deps or check disk/network]", file=sys.stderr)
+        print(
+            "\n[SmolLM2 section skipped or failed — install deps or check disk/network]",
+            file=sys.stderr,
+        )
         print(repr(e), file=sys.stderr)
         raise
 

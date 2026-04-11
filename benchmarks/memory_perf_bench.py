@@ -96,7 +96,9 @@ def _summarize(label: str, ms: List[float]) -> None:
     mean = statistics.mean(ms)
     med = statistics.median(ms)
     p95 = _percentile(s, 95)
-    print(f"  {label:32} mean={mean:8.2f} ms  median={med:8.2f} ms  p95={p95:8.2f} ms  (n={len(ms)})")
+    print(
+        f"  {label:32} mean={mean:8.2f} ms  median={med:8.2f} ms  p95={p95:8.2f} ms  (n={len(ms)})"
+    )
 
 
 def _run_recall_timed(mem: Memory, mode: str, queries: List[str], warmup: int) -> List[float]:
@@ -169,7 +171,7 @@ def bench_recall(
             mem.recall(q_r, top_k=5, mode="raw")
 
         modes = ("raw", "rerank") if both_modes else (mode,)
-        print(f"\n  --- recall: QUERY EMBEDDING MISS (unique query each timed call) ---")
+        print("\n  --- recall: QUERY EMBEDDING MISS (unique query each timed call) ---")
         means_miss: dict[str, float] = {}
         for m in modes:
             if m == "raw":
@@ -200,8 +202,12 @@ def main() -> None:
         help="Unique texts for timed remember() embed-miss path (0 = skip ingest)",
     )
     p.add_argument("--chunks", type=int, default=500, help="Corpus size for recall tests")
-    p.add_argument("--queries", type=int, default=60, help="Timed recall calls (unique queries, miss path)")
-    p.add_argument("--warmup", type=int, default=8, help="Warm-up recalls per mode before timed miss loop")
+    p.add_argument(
+        "--queries", type=int, default=60, help="Timed recall calls (unique queries, miss path)"
+    )
+    p.add_argument(
+        "--warmup", type=int, default=8, help="Warm-up recalls per mode before timed miss loop"
+    )
     p.add_argument(
         "--prime",
         type=int,

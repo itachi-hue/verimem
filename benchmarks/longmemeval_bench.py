@@ -54,7 +54,7 @@ if str(_BENCH_DIR) not in sys.path:
 
 from listwise_rerank import apply_local_rerank_indices
 from verimem.hybrid_retrieval import full_ranking_after_fusion
-from verimem.memory import DEFAULT_RETRIEVAL_MODE, RETRIEVAL_MODES
+from verimem.memory import DEFAULT_RETRIEVAL_MODE
 
 # Same cutoffs as ``convomem_bench.METRIC_KS`` (no @30 - use @20 for mid-rank reporting).
 METRIC_KS = (1, 3, 5, 10, 20, 50)
