@@ -44,6 +44,8 @@ dev = ["pytest>=7.0", "ruff>=0.4.0"]
 nli = ["optimum[onnxruntime]>=2.1,<3"]
 fast = ["usearch>=2.0"]
 spellcheck = ["autocorrect>=2.0"]
+groq = ["groq>=0.4.0"]
+hindsight = ["hindsight-client>=0.4.0"]
 # Convenience: ONNX speedups + FastStore (same deps as nli + fast).
 all = ["optimum[onnxruntime]>=2.1,<3", "usearch>=2.0"]
 

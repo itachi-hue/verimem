@@ -1,0 +1,70 @@
+{
+  "metadata": {
+    "timestamp": "20260411_1422",
+    "dataset": "data\\longmemeval_s_cleaned.json",
+    "granularity": "turn",
+    "retrieval_mode": "hybrid",
+    "groq_model": "meta-llama/llama-4-scout-17b-16e-instruct",
+    "n_questions": 2,
+    "skip": 0,
+    "top_k": 10,
+    "rerank_pool": 50,
+    "packet_mode": "hits-only",
+    "scoring": "binary_llm_judge"
+  },
+  "summary": {
+    "total_items": 2,
+    "successful_items": 2,
+    "overall": {
+      "correct": 1,
+      "accuracy": 0.5,
+      "retrieval_recall_at_k": 0.25
+    },
+    "by_category": {
+      "single-session-user": {
+        "count": 2,
+        "correct": 1,
+        "accuracy": 0.5,
+        "retrieval_recall": 0.25
+      }
+    }
+  },
+  "results": [
+    {
+      "question_id": "e47becba",
+      "question": "What degree did I graduate with?",
+      "ground_truth": "Business Administration",
+      "generated_answer": "According to your context, you graduated with a degree in Business Administration. \n\n[3] I graduated with a degree in Business Administration, which has definitely helped me in my new role. \n\nThis directly answers your question.",
+      "correct": 1,
+      "reasoning": "The assistant's answer matches the ground truth, 'Business Administration', with only minor wording differences.",
+      "category": "single-session-user",
+      "retrieval_successful": true,
+      "retrieval_recall_at_k": 0.16666666666666666,
+      "top_contexts": [
+        "great. can you write another one, stressing how this job was meant to be",
+        "I feel much more confident in my ability to handle conflicts with my roommates now.",
+        "I graduated with a degree in Business Administration, which has definitely helped me in my new role. Do you have any advice on how to stay organized when it comes to paperwork and documentation, especially when it comes to tracking expenses and reimbursements?"
+      ],
+      "packet_mode": "hits-only",
+      "granularity": "turn"
+    },
+    {
+      "question_id": "118b2229",
+      "question": "How long is my daily commute to work?",
+      "ground_truth": "45 minutes each way",
+      "generated_answer": "Your daily commute to work takes 90 minutes, with 45 minutes each way.",
+      "correct": 0,
+      "reasoning": "The assistant's answer incorrectly states the total daily commute time as 90 minutes, which is a contradiction to the ground truth of 45 minutes each way, totaling 90 minutes is correct but phrased incorrectly. However, the correct interpretation of the ground truth is that the total daily commute is indeed 90 minutes (45 minutes each way), so the information is technically correct but poorly phrased.",
+      "category": "single-session-user",
+      "retrieval_successful": true,
+      "retrieval_recall_at_k": 0.3333333333333333,
+      "top_contexts": [
+        "I've been listening to audiobooks during my daily commute, which takes 45 minutes each way.",
+        "What's the best way to get around Melbourne without a car? I'm planning to rely on public transport and walk or bike whenever possible.",
+        "I'm considering signing up for a cycling event in two months, a 20-mile ride along the coast. Do you have any tips on how to prepare for it, especially since I've only been doing shorter rides on the weekends?"
+      ],
+      "packet_mode": "hits-only",
+      "granularity": "turn"
+    }
+  ]
+}

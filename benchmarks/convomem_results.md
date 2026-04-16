@@ -241,6 +241,29 @@ Category order: Assistant Facts, User Facts, Changing Facts, Abstention, Implici
 | preference_evidence | 87.9% | 0.909 |
 | implicit_connection_evidence | 90.9% | 0.955 |
 
+### Groq Llama 4 Scout (300 items, full slice)
+
+[`convomem_qa_groq_bench.py`](convomem_qa_groq_bench.py) — same ConvoMem Q&A as above, but retrieval uses **`Memory.recall(..., mode="hybrid")`** (dense + BM25), not BGE RRF. Answer + binary judge with **Llama 4 Scout** via Groq (`meta-llama/llama-4-scout-17b-16e-instruct`). **Full benchmark slice:** 6 categories × 50 = **300** items, `top_k=10`, **`packet_mode=full`** (entire `ContextPacket.to_simple()` JSON in the prompt).
+
+**Saved run:** [`results_convomem_qa_groq_packet_full_300.json`](results_convomem_qa_groq_packet_full_300.json) (2026-04-11, run id `20260411_0030`).
+
+| | |
+| --- | ---: |
+| Items (successful) | 300 |
+| Judge accuracy | 90.3% (271 / 300) |
+| Mean retrieval recall@k | 0.956 |
+
+| Category | Accuracy | Retrieval recall |
+| --- | ---: | ---: |
+| user_evidence | 96.0% | 1.00 |
+| assistant_facts_evidence | 100.0% | 0.99 |
+| changing_evidence | 86.0% | 0.953 |
+| abstention_evidence | 92.0% | 0.98 |
+| preference_evidence | 86.0% | 0.88 |
+| implicit_connection_evidence | 82.0% | 0.933 |
+
+Install: `pip install -e ".[groq]"` (or `pip install groq`); set **`GROQ_API_KEY`**. **Retries with backoff** on 429/5xx (no client-side RPM cap). Reproduce: `python benchmarks/convomem_qa_groq_bench.py --total 300 --packet-mode full`. Other runs: `benchmarks/results_convomem_qa_groq_<timestamp>.json`.
+
 ---
 
 ## Notes
