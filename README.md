@@ -4,7 +4,7 @@
 
 Local semantic memory: **Chroma** or **FastStore**, hybrid BM25 + dense, cross-encoder rerank, optional NLI / entity graph. No API keys on the core path.
 
-**ConvoMem e2e Q&A:** **90.3%** binary judge on full **300** items (Groq Llama 4 Scout); **90.4%** on **198** items (Claude Sonnet 4.5) — [tables, methodology, saved JSON](benchmarks/convomem_results.md).
+**ConvoMem e2e Q&A:** **90.3%** binary judge on the full **300**-item slice with **Llama 4 Scout** (Groq)—strong end-to-end accuracy without a frontier proprietary model—[methodology & saved JSON](benchmarks/convomem_results.md).
 
 [![][version-shield]][release-link]
 [![][python-shield]][python-link]

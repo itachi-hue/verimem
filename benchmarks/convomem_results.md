@@ -220,30 +220,9 @@ Category order: Assistant Facts, User Facts, Changing Facts, Abstention, Implici
 
 ---
 
-## End-to-end Q&A (Claude Sonnet 4.5)
+## End-to-end Q&A (Llama 4 Scout via Groq)
 
-[`convomem_qa_bench.py`](convomem_qa_bench.py) — retrieval **`hybrid_rrf_bge_v2`**, then answer generation and binary judge with **Claude Sonnet 4.5**.
-
-**Saved run:** [`results_convomem_qa_claude_20260410_2241.json`](results_convomem_qa_claude_20260410_2241.json) (2026-04-10, `top_k=10`, ~33 items/category, binary scoring).
-
-| | |
-| --- | ---: |
-| Items (successful) | 198 |
-| Judge accuracy | 90.4% (179 / 198) |
-| Mean retrieval recall@k | 0.97 |
-
-| Category | Accuracy | Retrieval recall |
-| --- | ---: | ---: |
-| user_evidence | 90.9% | 1.00 |
-| assistant_facts_evidence | 97.0% | 0.985 |
-| changing_evidence | 97.0% | 1.00 |
-| abstention_evidence | 78.8% | 0.97 |
-| preference_evidence | 87.9% | 0.909 |
-| implicit_connection_evidence | 90.9% | 0.955 |
-
-### Groq Llama 4 Scout (300 items, full slice)
-
-[`convomem_qa_groq_bench.py`](convomem_qa_groq_bench.py) — same ConvoMem Q&A as above, but retrieval uses **`Memory.recall(..., mode="hybrid")`** (dense + BM25), not BGE RRF. Answer + binary judge with **Llama 4 Scout** via Groq (`meta-llama/llama-4-scout-17b-16e-instruct`). **Full benchmark slice:** 6 categories × 50 = **300** items, `top_k=10`, **`packet_mode=full`** (entire `ContextPacket.to_simple()` JSON in the prompt).
+[`convomem_qa_groq_bench.py`](convomem_qa_groq_bench.py) — ConvoMem question answering with **`Memory.recall(..., mode="hybrid")`** (dense + BM25), then answer generation and a binary judge, both using **Llama 4 Scout** via Groq (`meta-llama/llama-4-scout-17b-16e-instruct`). This is the same **300**-item slice as the retrieval tables (6 categories × 50), `top_k=10`, **`packet_mode=full`** (entire `ContextPacket.to_simple()` JSON in the prompt)—no frontier proprietary model required for strong e2e scores.
 
 **Saved run:** [`results_convomem_qa_groq_packet_full_300.json`](results_convomem_qa_groq_packet_full_300.json) (2026-04-11, run id `20260411_0030`).
 
@@ -263,6 +242,27 @@ Category order: Assistant Facts, User Facts, Changing Facts, Abstention, Implici
 | implicit_connection_evidence | 82.0% | 0.933 |
 
 Install: `pip install -e ".[groq]"` (or `pip install groq`); set **`GROQ_API_KEY`**. **Retries with backoff** on 429/5xx (no client-side RPM cap). Reproduce: `python benchmarks/convomem_qa_groq_bench.py --total 300 --packet-mode full`. Other runs: `benchmarks/results_convomem_qa_groq_<timestamp>.json`.
+
+### Reference — Claude Sonnet 4.5 (198 items)
+
+Earlier e2e run with retrieval **`hybrid_rrf_bge_v2`**, then answer generation and binary judge with **Claude Sonnet 4.5** ([`convomem_qa_bench.py`](convomem_qa_bench.py)). Kept for apples-to-apples comparison with other setups that use a frontier model; not the primary README result.
+
+**Saved run:** [`results_convomem_qa_claude_20260410_2241.json`](results_convomem_qa_claude_20260410_2241.json) (2026-04-10, `top_k=10`, ~33 items/category, binary scoring).
+
+| | |
+| --- | ---: |
+| Items (successful) | 198 |
+| Judge accuracy | 90.4% (179 / 198) |
+| Mean retrieval recall@k | 0.97 |
+
+| Category | Accuracy | Retrieval recall |
+| --- | ---: | ---: |
+| user_evidence | 90.9% | 1.00 |
+| assistant_facts_evidence | 97.0% | 0.985 |
+| changing_evidence | 97.0% | 1.00 |
+| abstention_evidence | 78.8% | 0.97 |
+| preference_evidence | 87.9% | 0.909 |
+| implicit_connection_evidence | 90.9% | 0.955 |
 
 ---
 
