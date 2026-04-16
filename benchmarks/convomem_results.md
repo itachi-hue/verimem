@@ -271,4 +271,4 @@ Earlier e2e run with retrieval **`hybrid_rrf_bge_v2`**, then answer generation a
 - **@1 / @3** in JSON: only the two BGE result files include those keys; the five MiniLM-path runs predate `METRIC_KS` including 1 and 3. Metrics at **@5–@50** are taken from stored `details.metrics` in each JSON.
 - **MiniLM** = `ms-marco-MiniLM-L-6-v2` cross-encoder where used; **BGE** modes use `BAAI/bge-reranker-v2-m3` instead for `rerank` / RRF’s CE leg.
 - Hardware affects wall time; only BGE runs logged timing above.
-- For external **MemPal 92.9%** comparisons, see [`BENCHMARKS.md`](BENCHMARKS.md) — metric definitions differ slightly from this harness (legacy overlap vs golden-id table).
+- For other LongMemEval / competitive framing, see [`BENCHMARKS.md`](BENCHMARKS.md) — metric definitions may differ from this harness (legacy overlap vs golden-id table).

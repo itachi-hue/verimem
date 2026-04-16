@@ -1,13 +1,13 @@
-# MemPal Benchmarks — Reproduction Guide
+# VeriMem benchmarks — reproduction guide
 
-Run the exact same benchmarks we report. Clone, install, run.
+Run the benchmarks in this repo. Clone, install, run.
 
 ## Setup
 
 ```bash
-git clone -b ben/benchmarking https://github.com/aya-thekeeper/mempal.git
-cd mempal
-pip install chromadb pyyaml
+git clone https://github.com/itachi-hue/verimem.git
+cd verimem
+pip install -e "."
 ```
 
 ## Benchmark 1: LongMemEval (500 questions)

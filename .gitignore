@@ -4,7 +4,6 @@ build/
 __pycache__/
 *.pyc
 .pytest_cache/
-mempal.yaml
 data/
 benchmarks/results_*.jsonl
 benchmarks/*.log

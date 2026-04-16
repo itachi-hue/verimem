@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-MemPal × ConvoMem Benchmark
+VeriMem × ConvoMem Benchmark
 ==============================
 
-Evaluates MemPal's retrieval against the ConvoMem benchmark.
+Evaluates VeriMem retrieval against the ConvoMem benchmark.
 75,336 QA pairs across 6 evidence categories.
 
 For each evidence item:
@@ -617,7 +617,7 @@ def run_benchmark(
 # =============================================================================
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="MemPal × ConvoMem Benchmark")
+    parser = argparse.ArgumentParser(description="VeriMem × ConvoMem Benchmark")
     parser.add_argument("--limit", type=int, default=100, help="Items per category (default: 100)")
     parser.add_argument("--top-k", type=int, default=10, help="Top-k retrieval (default: 10)")
     parser.add_argument(

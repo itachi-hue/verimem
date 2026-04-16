@@ -1,4 +1,4 @@
-# MemPal Benchmark Results — Full Progression
+# VeriMem Benchmark Results — Full Progression
 
 **March 2026 — The complete record from baseline to state-of-the-art.**
 
@@ -13,9 +13,9 @@ Every competitive memory system uses an LLM to manage memory:
 
 They all start from the assumption that you need AI to decide what to remember.
 
-**MemPal's baseline just stores the actual words and searches them with ChromaDB's default embeddings. No extraction. No summarization. No AI deciding what matters. And it scores 96.6% on LongMemEval.**
+**VeriMem's baseline just stores the actual words and searches them with ChromaDB's default embeddings. No extraction. No summarization. No AI deciding what matters. And it scores 96.6% on LongMemEval.**
 
-That's the finding. The field is over-engineering the memory extraction step. Raw verbatim text with good embeddings is a stronger baseline than anyone realized — because it doesn't lose information. When an LLM extracts "user prefers PostgreSQL" and throws away the original conversation, it loses the context of *why*, the alternatives considered, the tradeoffs discussed. MemPal keeps all of that, and the search model finds it.
+That's the finding. The field is over-engineering the memory extraction step. Raw verbatim text with good embeddings is a stronger baseline than anyone realized — because it doesn't lose information. When an LLM extracts "user prefers PostgreSQL" and throws away the original conversation, it loses the context of *why*, the alternatives considered, the tradeoffs discussed. VeriMem keeps all of that, and the search model finds it.
 
 Nobody published this result because nobody tried the simple thing and measured it properly.
 
@@ -43,21 +43,21 @@ Both are real. Both are reproducible. Neither is the whole picture alone.
 
 | # | System | R@5 | LLM Required | Which LLM | Notes |
 |---|---|---|---|---|---|
-| 1 | **MemPal (hybrid v4 + rerank)** | **100%** | Optional | Haiku | Reproducible, 500/500 |
+| 1 | **VeriMem (hybrid v4 + rerank)** | **100%** | Optional | Haiku | Reproducible, 500/500 |
 | 2 | Supermemory ASMR | ~99% | Yes | Undisclosed | Research only, not in production |
-| 3 | MemPal (hybrid v3 + rerank) | 99.4% | Optional | Haiku | Reproducible |
-| 3 | MemPal (palace + rerank) | 99.4% | Optional | Haiku | Independent architecture |
+| 3 | VeriMem (hybrid v3 + rerank) | 99.4% | Optional | Haiku | Reproducible |
+| 3 | VeriMem (palace + rerank) | 99.4% | Optional | Haiku | Independent architecture |
 | 4 | Mastra | 94.87% | Yes | GPT-5-mini | — |
-| 5 | **MemPal (raw, no LLM)** | **96.6%** | **None** | **None** | **Highest zero-API score published** |
+| 5 | **VeriMem (raw, no LLM)** | **96.6%** | **None** | **None** | **Highest zero-API score published** |
 | 6 | Hindsight | 91.4% | Yes | Gemini-3 | — |
 | 7 | Supermemory (production) | ~85% | Yes | Undisclosed | — |
 | 8 | Stella (dense retriever) | ~85% | None | None | Academic baseline |
 | 9 | Contriever | ~78% | None | None | Academic baseline |
 | 10 | BM25 (sparse) | ~70% | None | None | Keyword baseline |
 
-**MemPal raw (96.6%) is the highest published LongMemEval score that requires no API key, no cloud, and no LLM at any stage.**
+**VeriMem raw (96.6%) is the highest published LongMemEval score that requires no API key, no cloud, and no LLM at any stage.**
 
-**MemPal hybrid v4 + Haiku rerank (100%) is the first perfect score on LongMemEval — 500/500 questions, all 6 question types at 100%.**
+**VeriMem hybrid v4 + Haiku rerank (100%) is the first perfect score on LongMemEval — 500/500 questions, all 6 question types at 100%.**
 
 ---
 
@@ -69,14 +69,14 @@ VeriMem `convomem_bench.py` — **300-item BGE v2 runs** (golden-id @1–@50 + l
 
 | System | Score | Notes |
 |---|---|---|
-| **MemPal** | **92.9%** | Verbatim text, semantic search |
+| **VeriMem** | **92.9%** | Verbatim text, semantic search |
 | Gemini (long context) | 70–82% | Full history in context window |
 | Block extraction | 57–71% | LLM-processed blocks |
 | Mem0 (RAG) | 30–45% | LLM-extracted memories |
 
-MemPal is more than 2× Mem0 on this benchmark.
+VeriMem is more than 2× Mem0 on this benchmark.
 
-**Why MemPal beats Mem0 by 2×:** Mem0 uses an LLM to extract memories — it decides what to remember and discards the rest. When it extracts the wrong thing, the memory is gone. MemPal stores verbatim text. Nothing is discarded. The simpler approach wins because it doesn't lose information.
+**Why VeriMem beats Mem0 by 2×:** Mem0 uses an LLM to extract memories — it decides what to remember and discards the rest. When it extracts the wrong thing, the memory is gone. VeriMem stores verbatim text. Nothing is discarded. The simpler approach wins because it doesn't lose information.
 
 **Per-category breakdown:**
 
@@ -256,8 +256,9 @@ The palace classifies each question into one of 5 halls. Pass 1 searches only wi
 ### Setup
 
 ```bash
-git clone -b ben/benchmarking https://github.com/aya-thekeeper/mempal.git
-cd mempal
+git clone https://github.com/itachi-hue/verimem.git
+cd verimem
+pip install -e "."
 pip install chromadb pyyaml
 mkdir -p /tmp/longmemeval-data
 curl -fsSL -o /tmp/longmemeval-data/longmemeval_s_cleaned.json \
@@ -349,7 +350,7 @@ Every major AI memory system and where it stands:
 
 | System | Approach | LongMemEval | Requires | Notes |
 |---|---|---|---|---|
-| **MemPal** | Raw verbatim text + ChromaDB | 96.6% / 100% | Python + ChromaDB | Open source — strong LongMemEval with optional rerank |
+| **VeriMem** | Raw verbatim text + ChromaDB | 96.6% / 100% | Python + ChromaDB | Open source — strong LongMemEval with optional rerank |
 | Supermemory | Agentic LLM search (ASMR) | ~99% (exp) / ~85% (prod) | LLM API | Production + experimental tracks |
 | Mastra | LLM observation extraction | 94.87% | GPT-5-mini | Highest validated production score |
 | Hindsight | Time-aware vector retrieval | 91.4% | LLM API | Validated by Virginia Tech |
@@ -362,7 +363,7 @@ Every major AI memory system and where it stands:
 
 ### Tradeoffs at a Glance
 
-| | **MemPal** | LLM-Based (Mem0, Mastra) | Heavy Infra (OpenViking, Zep) |
+| | **VeriMem** | LLM-Based (Mem0, Mastra) | Heavy Infra (OpenViking, Zep) |
 |---|---|---|---|
 | No API key needed | ✅ | ✗ | ✗ |
 | Data stays local | ✅ | Sent to API | Depends |
@@ -450,8 +451,7 @@ All raw results are committed:
 | `results_diary_haiku_rerank_full500.jsonl` | diary+rerank | 98.2% | 65% cache, partial |
 | `results_aaak_full500.jsonl` | aaak | 84.2% | Legacy run before VeriMem 4.x (AAAK removed) |
 | `results_rooms_full500.jsonl` | rooms | 89.4% | Session rooms |
-| `results_mempal_hybrid_v4_llmrerank_session_20260325_0930.jsonl` | hybrid_v4+rerank | 100% | Haiku, 500/500 |
-| `results_mempal_hybrid_v4_llmrerank_session_20260325_1054.jsonl` | hybrid_v4+rerank | 100% | Sonnet, LME 500/500 |
+| `results_*_hybrid_v4_llmrerank_session_*.jsonl` (archived runs) | hybrid_v4+rerank | 100% | Haiku or Sonnet, 500/500 |
 | `results_lme_hybrid_v4_held_out_450_20260326_0010.json` | hybrid_v4 held-out | 98.4% R@5 | Clean — 450 unseen questions |
 | `diary_cache_haiku.json` | — | — | Pre-computed diary topics |
 
@@ -516,7 +516,7 @@ Result file: `results_lme_hybrid_v4_held_out_450_20260326_0010.json`
 | **noisy** | **43.4%** | **Distractors/irrelevant info** |
 | **Overall** | **80.3%** | 6828/8500 |
 
-**Strongest categories**: aggregative (99.3%), comparative (98.4%), lowlevel_rec (99.8%) — MemPal handles multi-turn fact combination extremely well.
+**Strongest categories**: aggregative (99.3%), comparative (98.4%), lowlevel_rec (99.8%) — VeriMem handles multi-turn fact combination extremely well.
 
 **Weakest**: noisy (43.4%) — questions designed with deliberate distractors and irrelevant information mixed in. This is the designed hard case for verbatim storage: when noise is indistinguishable from signal at the embedding level, retrieval degrades. Post-processing (56.6%) and conditional (57.3%) are reasoning-heavy categories where retrieval alone is insufficient.
 

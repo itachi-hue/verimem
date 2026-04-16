@@ -17,4 +17,4 @@ labels: bug
 **Environment:**
 - OS:
 - Python version:
-- MemPal version: (check `python mempal.py --version` or git SHA)
+- VeriMem version: (`pip show verimem` package version and/or `git rev-parse HEAD`)
