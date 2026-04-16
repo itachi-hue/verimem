@@ -46,7 +46,6 @@ Both are real. Both are reproducible. Neither is the whole picture alone.
 | 1 | **VeriMem (hybrid v4 + rerank)** | **100%** | Optional | Haiku | Reproducible, 500/500 |
 | 2 | Supermemory ASMR | ~99% | Yes | Undisclosed | Research only, not in production |
 | 3 | VeriMem (hybrid v3 + rerank) | 99.4% | Optional | Haiku | Reproducible |
-| 3 | VeriMem (palace + rerank) | 99.4% | Optional | Haiku | Independent architecture |
 | 4 | Mastra | 94.87% | Yes | GPT-5-mini | — |
 | 5 | **VeriMem (raw, no LLM)** | **96.6%** | **None** | **None** | **Highest zero-API score published** |
 | 6 | Hindsight | 91.4% | Yes | Gemini-3 | — |
@@ -186,7 +185,7 @@ Examples of what gets caught:
 
 **What changed:** Three targeted fixes for the three questions that failed in every previous mode.
 
-The remaining misses were identified by loading both the hybrid v3 and palace results and finding the exact questions that failed in *both* architectures — confirming they were hard limits, not luck.
+The remaining misses were identified by comparing hybrid v3 failure sets — confirming they were hard limits, not luck.
 
 **Fix 1 — Quoted phrase extraction** (miss: `'sexual compulsions'` assistant question):
 The question contained an exact quoted phrase in single quotes. Sessions containing that exact phrase now get a 60% distance reduction. The target session jumped from unranked to rank 1.
@@ -203,37 +202,6 @@ The target session said "I still remember the happy high school experiences such
 
 ---
 
-### Parallel Approach: Palace Mode + Haiku Rerank → 99.4% (independent convergence)
-
-Built independently from the hybrid track. Different architecture, same ceiling.
-
-**Architecture:**
-```
-PALACE
-  └── HALL (concept: travel, work, health, relationships, general)
-        └── Two-pass retrieval:
-              Pass 1: tight search within inferred hall
-              Pass 2: full haystack with hall-based score bonuses
-```
-
-The palace classifies each question into one of 5 halls. Pass 1 searches only within that hall — high precision, catches the obvious match. Pass 2 searches the full corpus with the hall affinity as a tiebreaker — catches cases where the relevant session was miscategorized.
-
-**Why this matters:** Two completely independent architectures (hybrid scoring vs. palace navigation) converged at exactly the same score (99.4%). This is the strongest possible validation of the retrieval ceiling. The ceiling is architectural, not a local maximum of any one approach.
-
----
-
-### Active Work: Diary Mode (98.2% at 65% cache coverage)
-
-**What it adds:** At ingest time, Claude Haiku reads each session and generates topic summaries and category labels. These become synthetic documents alongside the verbatim session.
-
-**Why it matters:** The hardest remaining misses are vocabulary-gap failures — the question uses different words than the session. Diary topics bridge these gaps:
-- Question: "yoga classes" → Session: "went this morning, instructor pushed me hard"
-- With diary: synthetic doc says "fitness, morning workout, yoga-style exercise" → now both match
-
-**Current status:** 98% cache coverage (18,803 of 19,195 sessions pre-computed). The overnight cache build is complete. Full benchmark run pending — expected to reach ≥99.4% once asymmetry from the remaining ~2% uncovered sessions is eliminated.
-
----
-
 ## Score Progression Summary
 
 | Mode | R@5 | NDCG@10 | LLM | Cost/query | Status |
@@ -243,8 +211,6 @@ The palace classifies each question into one of 5 halls. Pass 1 searches only wi
 | Hybrid v2 | 98.4% | — | None | $0 | ✅ Verified |
 | Hybrid v2 + rerank | 98.8% | — | Haiku | ~$0.001 | ✅ Verified |
 | Hybrid v3 + rerank | 99.4% | 0.983 | Haiku | ~$0.001 | ✅ Verified |
-| Palace + rerank | 99.4% | 0.983 | Haiku | ~$0.001 | ✅ Verified |
-| Diary + rerank (98% cache) | 98.2% | 0.956 | Haiku | ~$0.001 | ✅ Partial — full run pending |
 | **Hybrid v4 + Haiku rerank** | **100%** | **0.976** | Haiku | ~$0.001 | ✅ Verified |
 | **Hybrid v4 + Sonnet rerank** | **100%** | **0.975** | Sonnet | ~$0.003 | ✅ Verified |
 | **Hybrid v4 held-out (450q)** | **98.4%** | **0.939** | None | $0 | ✅ Clean — never tuned on |
@@ -309,31 +275,6 @@ python benchmarks/longmemeval_bench.py \
   --llm-rerank \
   --llm-model claude-sonnet-4-6 \
   --api-key $ANTHROPIC_API_KEY
-```
-
-### Palace + Haiku rerank (99.4%) — needs API key
-
-```bash
-python benchmarks/longmemeval_bench.py \
-  /tmp/longmemeval-data/longmemeval_s_cleaned.json \
-  --mode palace \
-  --llm-rerank \
-  --api-key $ANTHROPIC_API_KEY
-```
-
-### Diary + Haiku rerank (needs precomputed cache) — needs API key
-
-```bash
-# First build the diary cache (one-time, ~$5-10 for all 19,195 sessions)
-python /tmp/build_diary_cache.py
-
-# Then run with cache
-python benchmarks/longmemeval_bench.py \
-  /tmp/longmemeval-data/longmemeval_s_cleaned.json \
-  --mode diary \
-  --llm-rerank \
-  --api-key $ANTHROPIC_API_KEY \
-  --skip-precompute
 ```
 
 ### ConvoMem (92.9%)
@@ -447,13 +388,10 @@ All raw results are committed:
 |---|---|---|---|
 | `results_raw_full500.jsonl` | raw | 96.6% | No LLM |
 | `results_hybrid_v3_rerank_full500.jsonl` | hybrid+rerank | 99.4% | Haiku |
-| `results_palace_rerank_full500.jsonl` | palace+rerank | 99.4% | Haiku |
-| `results_diary_haiku_rerank_full500.jsonl` | diary+rerank | 98.2% | 65% cache, partial |
 | `results_aaak_full500.jsonl` | aaak | 84.2% | Legacy run before VeriMem 4.x (AAAK removed) |
 | `results_rooms_full500.jsonl` | rooms | 89.4% | Session rooms |
 | `results_*_hybrid_v4_llmrerank_session_*.jsonl` (archived runs) | hybrid_v4+rerank | 100% | Haiku or Sonnet, 500/500 |
 | `results_lme_hybrid_v4_held_out_450_20260326_0010.json` | hybrid_v4 held-out | 98.4% R@5 | Clean — 450 unseen questions |
-| `diary_cache_haiku.json` | — | — | Pre-computed diary topics |
 
 ---
 

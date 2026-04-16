@@ -14,7 +14,7 @@ import sqlite3
 from pathlib import Path
 
 _DB_NAME = "store_revision.db"
-_LEGACY_DB_NAME = "palace_revision.db"
+_LEGACY_DB_NAME = "verimem_legacy_revision.db"
 
 
 def _db_path(store_path: str) -> str:
