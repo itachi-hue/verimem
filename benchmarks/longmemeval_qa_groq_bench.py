@@ -3,9 +3,10 @@
 LongMemEval-S Q&A — Groq + VeriMem hybrid (ConvoMem-style E2E)
 ===============================================================
 
-For each benchmark row: ingest haystack (user turns) with ``Memory.remember``,
+For each benchmark row: ingest haystack with ``Memory.remember``,
 ``Memory.recall(..., mode='hybrid')``, then answer + binary judge on Groq — same
-pattern as ``convomem_qa_groq_bench.py``.
+pattern as ``convomem_qa_groq_bench.py``. Use ``--corpus-mode user`` (default) or
+``full`` (user + assistant turns, role-prefixed).
 
 Gold retrieval metric: fraction of gold **corpus row** indices (messages or
 sessions in ``answer_session_ids``) covered by the top-``k`` ranked rows.
@@ -76,10 +77,34 @@ def balanced_sample_by_question_type(
     return out, counts
 
 
-def build_corpus_from_entry(entry: dict, granularity: str) -> tuple[list[str], list[str]]:
+def _format_turn_line(turn: dict, corpus_mode: str) -> str | None:
+    """One embeddable line; None to skip."""
+    role = turn.get("role") or ""
+    content = (turn.get("content") or "").strip()
+    if not content:
+        return None
+    if corpus_mode == "user":
+        if role != "user":
+            return None
+        return content
+    # full transcript: label roles for retrieval
+    if role == "user":
+        return f"User: {content}"
+    if role == "assistant":
+        return f"Assistant: {content}"
+    return content
+
+
+def build_corpus_from_entry(
+    entry: dict,
+    granularity: str,
+    corpus_mode: str = "user",
+) -> tuple[list[str], list[str]]:
     """
     Build parallel corpus + haystack session id per row.
-    User turns only (aligned with ``longmemeval_bench`` default corpus).
+
+    ``corpus_mode``: ``user`` — user turns only (same as ``longmemeval_bench``
+    default). ``full`` — every user/assistant turn, role-prefixed.
     """
     sessions = entry["haystack_sessions"]
     session_ids = entry["haystack_session_ids"]
@@ -88,15 +113,21 @@ def build_corpus_from_entry(entry: dict, granularity: str) -> tuple[list[str], l
 
     for session, sid in zip(sessions, session_ids):
         if granularity == "session":
-            user_turns = [t["content"] for t in session if t.get("role") == "user"]
-            if user_turns:
-                corpus.append("\n".join(user_turns))
+            lines: list[str] = []
+            for turn in session:
+                line = _format_turn_line(turn, corpus_mode)
+                if line:
+                    lines.append(line)
+            if lines:
+                corpus.append("\n".join(lines))
                 sid_row.append(sid)
         else:
             for turn in session:
-                if turn.get("role") == "user":
-                    corpus.append(turn["content"])
-                    sid_row.append(sid)
+                line = _format_turn_line(turn, corpus_mode)
+                if line is None:
+                    continue
+                corpus.append(line)
+                sid_row.append(sid)
 
     return corpus, sid_row
 
@@ -163,6 +194,7 @@ def evaluate_item(
     device: str,
     packet_mode: str,
     granularity: str,
+    corpus_mode: str = "user",
     sync_contradictions: bool = False,
     include_uncertainty: bool = True,
 ) -> dict:
@@ -172,7 +204,7 @@ def evaluate_item(
     qid = entry.get("question_id", "")
     answer_sids = set(entry["answer_session_ids"])
 
-    corpus, sid_row = build_corpus_from_entry(entry, granularity)
+    corpus, sid_row = build_corpus_from_entry(entry, granularity, corpus_mode)
     if not corpus:
         return {
             "question_id": qid,
@@ -180,7 +212,7 @@ def evaluate_item(
             "ground_truth": ground_truth,
             "generated_answer": "",
             "correct": 0,
-            "reasoning": "Empty corpus (no user turns)",
+            "reasoning": "Empty corpus (no indexed turns)",
             "category": qtype,
             "retrieval_successful": False,
         }
@@ -235,6 +267,7 @@ def evaluate_item(
         "top_contexts": contexts[:3],
         "packet_mode": packet_mode,
         "granularity": granularity,
+        "corpus_mode": corpus_mode,
         "sync_contradictions": sync_contradictions,
         "include_uncertainty": include_uncertainty,
     }
@@ -278,7 +311,13 @@ def main() -> None:
         "--granularity",
         choices=("turn", "session"),
         default="turn",
-        help="Corpus unit: one row per user message (turn) or one row per session (joined user turns).",
+        help="Corpus unit: one row per message (turn) or one row per session (joined turns).",
+    )
+    p.add_argument(
+        "--corpus-mode",
+        choices=("user", "full"),
+        default="user",
+        help="user: index user turns only. full: user+assistant (role-prefixed).",
     )
     p.add_argument(
         "--sync-contradictions",
@@ -322,7 +361,7 @@ def main() -> None:
     print(f"Data: {data_path.name} | questions: {len(data)}")
     if per_type_counts:
         print("  Balanced per question_type:", per_type_counts)
-    print(f"Granularity: {args.granularity}")
+    print(f"Granularity: {args.granularity} | corpus-mode: {args.corpus_mode}")
     print(f"Model: {args.model}")
     print(
         f"Retrieval: Memory.recall(mode='hybrid'), top_k={args.top_k}, rerank_pool={args.rerank_pool}"
@@ -354,6 +393,7 @@ def main() -> None:
                 device=dev,
                 packet_mode=args.packet_mode,
                 granularity=args.granularity,
+                corpus_mode=args.corpus_mode,
                 sync_contradictions=args.sync_contradictions,
                 include_uncertainty=not args.no_uncertainty,
             )
@@ -403,6 +443,7 @@ def main() -> None:
             "timestamp": ts,
             "dataset": str(data_path),
             "granularity": args.granularity,
+            "corpus_mode": args.corpus_mode,
             "retrieval_mode": "hybrid",
             "groq_model": args.model,
             "n_questions": len(data),
