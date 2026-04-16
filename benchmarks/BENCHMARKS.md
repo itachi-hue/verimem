@@ -74,7 +74,7 @@ VeriMem `convomem_bench.py` — **300-item BGE v2 runs** (golden-id @1–@50 + l
 | Block extraction | 57–71% | LLM-processed blocks |
 | Mem0 (RAG) | 30–45% | LLM-extracted memories |
 
-MemPal is more than 2× Mem0 on this benchmark. With Sonnet rerank, MemPal reaches **100% on LoCoMo** across all 5 question types including temporal-inference (was 46% at baseline).
+MemPal is more than 2× Mem0 on this benchmark.
 
 **Why MemPal beats Mem0 by 2×:** Mem0 uses an LLM to extract memories — it decides what to remember and discards the rest. When it extracts the wrong thing, the memory is gone. MemPal stores verbatim text. Nothing is discarded. The simpler approach wins because it doesn't lose information.
 
@@ -87,60 +87,6 @@ MemPal is more than 2× Mem0 on this benchmark. With Sonnet rerank, MemPal reach
 | Abstention | 91.0% | Strong |
 | Implicit Connections | 89.3% | Good |
 | Preferences | 86.0% | Good — weakest category |
-
-### LoCoMo (1,986 multi-hop QA pairs)
-
-| Mode | R@5 | R@10 | LLM | Notes |
-|---|---|---|---|---|
-| **Hybrid v5 + Sonnet rerank (top-50)** | **100%** | **100%** | Sonnet | Structurally guaranteed (top-k > sessions) |
-| **bge-large + Haiku rerank (top-15)** | — | **96.3%** | Haiku | Single-hop 86.6%, temporal-inf 87.0% |
-| **bge-large hybrid (top-10)** | — | **92.4%** | None | +3.5pp over all-MiniLM, single-hop +10.6pp |
-| **Hybrid v5 (top-10)** | 83.7% | **88.9%** | None | Beats Memori 81.95% — honest score |
-| **Wings v3 speaker-owned closets (top-10)** | — | **85.7%** | None | Adversarial 92.8% — speaker ownership solves speaker confusion |
-| **Wings v2 concept closets (top-10)** | — | **75.6%** | None | Adversarial 80.0%; single-hop 49% drags overall |
-| **Palace v2 (top-10, 3 rooms)** | 75.6% | **84.8%** | Haiku (index) | Room assignment at index; summary routing at query |
-| Wings v1 (broken — filter not boost) | — | 58.0% | None | Speaker WHERE filter discarded evidence; 5.4% coverage |
-| Palace v1 (top-5, global LLM routing) | 34.2% | — | Haiku (both) | Fails: taxonomy mismatch |
-| Session, no rerank (top-10) | — | 60.3% | None | Baseline |
-| Dialog, no rerank (top-10) | — | 48.0% | None | — |
-
-**Wings v2 per-category breakdown (top-10, no LLM):**
-
-| Category | Wings v1 | Wings v2 | Delta |
-|---|---|---|---|
-| Single-hop | ~52% | 49.0% | -3pp |
-| Temporal | ~64% | 79.2% | +15pp |
-| Temporal-inference | ~53% | 49.1% | -4pp |
-| Open-domain | ~71% | 83.7% | +13pp |
-| **Adversarial** | **34.0%** | **80.0%** | **+46pp** |
-
-**Wings v3 per-category breakdown (top-10, no LLM):**
-
-| Category | Wings v1 | Wings v2 | Wings v3 | Hybrid v5 |
-|---|---|---|---|---|
-| Single-hop | ~52% | 49.0% | **65.3%** | ~70%? |
-| Temporal | ~64% | 79.2% | **87.3%** | ~87%? |
-| Temporal-inference | ~53% | 49.1% | **63.2%** | ~65%? |
-| Open-domain | ~71% | 83.7% | **90.7%** | ~90%? |
-| **Adversarial** | **34.0%** | **80.0%** | **92.8%** | — |
-
-Wings v3 design: one closet per speaker per session. Owner's turns verbatim; other speaker's turns as `[context]` labels. 38 closets/conversation vs 184 (v2) → 26% coverage with top-10. Adversarial score (92.8%) exceeds bge-large overall (92.4%) — speaker ownership almost completely solves the speaker-confusion category.
-
-Root cause of wings v1 failure: (1) speaker WHERE filter discarded evidence about Caroline when evidence lived in a John-tagged closet (John spoke more words but conversation was about Caroline); (2) top_k=10 from ~184 closets = 5.4% coverage vs 37% in session mode. Fix: retrieve all closets, use speaker match as 15% distance boost instead of filter.
-
-**With Sonnet rerank, MemPal achieves 100% on every LoCoMo question type — including temporal-inference, which was the hardest category at baseline.**
-
-**Per-category breakdown (hybrid + Sonnet rerank):**
-
-| Category | Recall | Baseline | Delta |
-|---|---|---|---|
-| Single-hop | 1.000 | 59.0% | +41.0pp |
-| Temporal | 1.000 | 69.2% | +30.8pp |
-| **Temporal-inference** | **1.000** | **46.0%** | **+54.0pp** |
-| Open-domain | 1.000 | 58.1% | +41.9pp |
-| Adversarial | 1.000 | 61.9% | +38.1pp |
-
-**Temporal-inference was the hardest category** — questions requiring connections across multiple sessions. Hybrid scoring (person name boost, quoted phrase boost) combined with Sonnet's reading comprehension closes this gap entirely. From 46% to 100%.
 
 ---
 
@@ -395,25 +341,6 @@ python benchmarks/longmemeval_bench.py \
 python benchmarks/convomem_bench.py --category all --limit 50
 ```
 
-### LoCoMo — no rerank (60.3% at top-10)
-
-```bash
-git clone https://github.com/snap-research/locomo.git /tmp/locomo
-python benchmarks/locomo_bench.py /tmp/locomo/data/locomo10.json --granularity session
-```
-
-### LoCoMo — hybrid + Sonnet rerank (100%)
-
-```bash
-python benchmarks/locomo_bench.py /tmp/locomo/data/locomo10.json \
-  --mode hybrid \
-  --granularity session \
-  --top-k 50 \
-  --llm-rerank \
-  --llm-model claude-sonnet-4-6 \
-  --api-key $ANTHROPIC_API_KEY
-```
-
 ---
 
 ## The Competitive Field
@@ -422,16 +349,16 @@ Every major AI memory system and where it stands:
 
 | System | Approach | LongMemEval | Requires | Notes |
 |---|---|---|---|---|
-| **MemPal** | Raw verbatim text + ChromaDB | 96.6% / 100% | Python + ChromaDB | Open source — 100% LME + 100% LoCoMo w/ rerank |
+| **MemPal** | Raw verbatim text + ChromaDB | 96.6% / 100% | Python + ChromaDB | Open source — strong LongMemEval with optional rerank |
 | Supermemory | Agentic LLM search (ASMR) | ~99% (exp) / ~85% (prod) | LLM API | Production + experimental tracks |
 | Mastra | LLM observation extraction | 94.87% | GPT-5-mini | Highest validated production score |
 | Hindsight | Time-aware vector retrieval | 91.4% | LLM API | Validated by Virginia Tech |
 | Mem0 | LLM fact extraction | 30–45% (ConvoMem) | LLM API | Popular, weak on benchmarks |
-| OpenViking | Filesystem-paradigm context DB | Not published | Go + Rust + C++ + VLM | ByteDance; tested on LoCoMo10 only |
+| OpenViking | Filesystem-paradigm context DB | Not published | Go + Rust + C++ + VLM | ByteDance; limited public benchmark numbers |
 | Letta (MemGPT) | OS-inspired LLM context mgmt | Not published | LLM API | Stateful agent architecture |
 | Zep | Graph-based memory + entity ext | Not published | LLM API + graph DB | Enterprise-focused |
 
-**OpenViking note:** Tested on LoCoMo10 showing 52% task completion and 91% token savings. No LongMemEval scores published. Requires Go, Rust, C++, and a VLM API — highest infrastructure burden of any system here.
+**OpenViking note:** Public LongMemEval scores not published. Requires Go, Rust, C++, and a VLM API — high infrastructure burden.
 
 ### Tradeoffs at a Glance
 
@@ -495,19 +422,13 @@ python benchmarks/longmemeval_bench.py data/... --mode hybrid_v4 --held-out --sp
 
 **The honest next number to publish is the held-out score on a fresh mode that was tuned on dev data only.** Anything else is contaminated.
 
-### LoCoMo 100% — a separate caveat
-
-The LoCoMo 100% result with top-k=50 has a structural issue: each of the 10 conversations has 19–32 sessions, but top-k=50 exceeds that count. This means the ground-truth session is always in the candidate pool regardless of the embedding model's ranking. The Sonnet rerank is essentially doing reading comprehension over all sessions — the embedding retrieval step is bypassed entirely.
-
-**The honest LoCoMo score is the top-10 result: 60.3% without rerank.** A re-run at top-k=10 with the hybrid mode and rerank is the next step for a publishable LoCoMo result.
-
 ---
 
 ## Notes on Reproducibility
 
 **The scripts are deterministic.** Same data + same script = same result every time. ChromaDB's embeddings are deterministic. The benchmark uses a fixed dataset with no randomness.
 
-**The data is public.** LongMemEval, LoCoMo, and ConvoMem are all published academic datasets. Links are in the scripts.
+**The data is public.** LongMemEval and ConvoMem are published academic datasets. Links are in the scripts.
 
 **The results are auditable.** Every result JSONL file in `benchmarks/results_*.jsonl` contains every question, every retrieved document, every score. You can inspect every individual answer — not just the aggregate.
 
@@ -531,12 +452,7 @@ All raw results are committed:
 | `results_rooms_full500.jsonl` | rooms | 89.4% | Session rooms |
 | `results_mempal_hybrid_v4_llmrerank_session_20260325_0930.jsonl` | hybrid_v4+rerank | 100% | Haiku, 500/500 |
 | `results_mempal_hybrid_v4_llmrerank_session_20260325_1054.jsonl` | hybrid_v4+rerank | 100% | Sonnet, LME 500/500 |
-| `results_locomo_hybrid_llmrerank_session_top50_20260325_1056.json` | locomo hybrid+rerank | 100% | Sonnet, 1986/1986 |
 | `results_lme_hybrid_v4_held_out_450_20260326_0010.json` | hybrid_v4 held-out | 98.4% R@5 | Clean — 450 unseen questions |
-| `results_locomo_hybrid_session_top10_*.json` | locomo hybrid_v5 | 88.9% R@10 | Honest — top-10, no rerank |
-| `results_locomo_palace_session_top5_20260326_0031.json` | locomo palace v2 | 75.6% R@5 | Summary-based routing, 3 rooms |
-| `results_locomo_palace_session_top10_20260326_0029.json` | locomo palace v2 | 84.8% R@10 | Summary-based routing, 3 rooms |
-| `palace_cache_locomo.json` | — | — | 272 session room assignments (Haiku) |
 | `diary_cache_haiku.json` | — | — | Pre-computed diary topics |
 
 ---
@@ -582,66 +498,6 @@ Result file: `results_lme_hybrid_v4_held_out_450_20260326_0010.json`
 
 ---
 
-### LoCoMo hybrid_v5 — honest top-10 (no rerank)
-
-**88.9% R@10, 72.1% single-hop** on all 1986 questions.
-
-The v5 fix: extracted person names from keyword overlap scoring. In LoCoMo, both speakers' names appear in every session — including them in keyword boosting gave equal signal to all sessions. Removing them lets predicate keywords ("research", "career") do the actual work.
-
-| Category | R@10 |
-|---|---|
-| Single-hop | 72.1% |
-| Temporal | 90.8% |
-| Temporal-inference | 70.0% |
-| Open-domain | 92.6% |
-| Adversarial | 95.3% |
-| **Overall** | **88.9%** |
-
-Beats Memori (81.95%) by 7pp with no reranking. Result file: `results_locomo_hybrid_session_top10_*.json`
-
----
-
-### LoCoMo palace mode — LLM room assignment (RESULTS)
-
-**Architecture v1 (global taxonomy routing):** Haiku assigns each session to a room at index time. At query time, Haiku routes question to 1-2 rooms. **Result: 34.2% R@5** — 62.5% zero-recall. Failure: independent LLM calls with no shared context produced terminology mismatch between index-time labels and query-time routing.
-
-**Architecture v2 (conversation-specific routing):** Same room assignments at index time. At query time, route using keyword overlap against per-room aggregated session summaries — the *same text* used to generate the labels. No LLM calls at query time. **Result: 84.8% R@10 (3 rooms), 75.6% R@5.**
-
-| Version | R@5 | R@10 | Zero-recall | Notes |
-|---|---|---|---|---|
-| v1: global LLM routing | 34.2% | ~44% | 62.5% | Terminology mismatch |
-| v2: summary-based routing, top-2 rooms | 71.7% | 77.9% | 17.8% | Big fix |
-| **v2: summary-based routing, top-3 rooms** | **75.6%** | **84.8%** | **11.0%** | Best palace result |
-| Hybrid v5 (no rooms) | 83.7% | 88.9% | — | Comparison baseline |
-
-**Gap vs. hybrid_v5:** 4.1pp at R@10. The palace structure is working — room assignments are semantically correct (Caroline's identity dominates; Joanna+Nate in hobbies_creativity). The remaining gap is inherent to filtering: some sessions in room #4 or #5 by keyword score are missed even though they're relevant.
-
-**Per-category (palace v2, top-3 rooms, top-10):**
-
-| Category | R@10 |
-|---|---|
-| Single-hop | 65.4% |
-| Temporal | 84.1% |
-| Temporal-inference | 66.9% |
-| Open-domain | 90.1% |
-| Adversarial | 91.3% |
-| **Overall** | **84.8%** |
-
-Room taxonomy (14 rooms): identity_sexuality, career_education, relationships_romance, family_children, health_wellness, hobbies_creativity, social_community, home_living, travel_places, food_cooking, money_finance, emotions_mood, media_entertainment, general.
-
-Sample room assignments (conv-26, Caroline + Melanie):
-- 7/19 sessions → identity_sexuality (her dominant theme)
-- 6/19 sessions → family_children
-- 1/19 sessions → career_education ← where "What did Caroline research?" goes
-- 2/19 sessions → hobbies_creativity (Melanie's painting)
-
-Sample (conv-42, Joanna + Nate):
-- 21/29 sessions → hobbies_creativity (gaming tournaments, screenwriting, film festivals)
-
-Result files: `results_locomo_palace_session_top5_20260326_0031.json`, `results_locomo_palace_session_top10_20260326_0029.json`
-
----
-
 ### MemBench (ACL 2025) — all categories hybrid top-5
 
 **80.3% R@5 overall** across 8,500 items (movie + roles + events topics).
@@ -676,17 +532,6 @@ These are the runs needed to produce defensible, publishable numbers. None of th
 
 **DONE** — see above. 98.4% R@5 on 450 held-out questions.
 
-### 1b. Palace mode LoCoMo (in progress)
-
-```bash
-python benchmarks/longmemeval_bench.py /tmp/longmemeval-data/longmemeval_s_cleaned.json \
-  --mode hybrid_v4 --llm-rerank \
-  --held-out --split-file benchmarks/lme_split_50_450.json \
-  --llm-model claude-haiku-4-5-20251001
-```
-
-**Expected:** likely still near 100% if the hybrid_v4 fixes generalize — but we don't know until we run it.
-
 ### 2. bge-large raw baseline (no heuristics, better embeddings)
 
 The question: how much of the 96.6% → 99.4% improvement is the heuristics, and how much would come from just using a better embedding model?
@@ -698,28 +543,6 @@ python benchmarks/longmemeval_bench.py /tmp/longmemeval-data/longmemeval_s_clean
 ```
 
 **Expected:** somewhere between 96.6% and 99.4%. If it's near 99.4%, the heuristics are doing less work than they appear to.
-
-### 3. Honest LoCoMo — hybrid at top-10
-
-The 100% result used top-k=50 which exceeds the session count, making retrieval trivial. The honest number is top-k=10.
-
-```bash
-python benchmarks/locomo_bench.py /tmp/locomo/data/locomo10.json \
-  --mode hybrid --granularity session \
-  --top-k 10 \
-  --llm-rerank --llm-model claude-haiku-4-5-20251001
-```
-
-**Expected:** higher than the 60.3% raw top-10 baseline, lower than 100%.
-
-### 4. bge-large on LoCoMo top-10
-
-Same purpose as #2: isolate the contribution of a better embedding model from the contribution of heuristics.
-
-```bash
-python benchmarks/locomo_bench.py /tmp/locomo/data/locomo10.json \
-  --mode raw --granularity session --top-k 10 --embed-model bge-large
-```
 
 ---
 

@@ -470,10 +470,6 @@ parser.add_argument("--hybrid-weight", type=float, default=0.30,
 
 Hybrid v2 retrieval lives in `build_hybrid_retrieve()` (temporal boost, two-pass assistant handling). See `longmemeval_bench.py`.
 
-### 4. LoCoMo default top-k: 10 → 50
-
-Going from top-10 to top-50 on LoCoMo was free performance (+17pp on dialog granularity). Updated default in `locomo_bench.py`.
-
 ---
 
 ## Where to Go Next
@@ -511,7 +507,6 @@ The 5 remaining failures include at least 2 that are arguably ambiguous — the 
 ```
 benchmarks/
   longmemeval_bench.py                         — main benchmark + all modes
-  locomo_bench.py                              — LoCoMo benchmark (top-k default now 50)
   results_hybrid_full500_merged.jsonl          — hybrid v1 results (R@5=97.8%)
   results_hybrid_w040_full500_merged.jsonl     — hybrid v1 w=0.40 comparison (R@5=97.4%)
   results_hybrid_v2_full500_merged.jsonl       — hybrid v2 results (R@5=98.4%)

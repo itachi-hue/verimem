@@ -44,35 +44,7 @@ Time:      ~5 minutes on Apple Silicon
 
 See `VERIMEM_BENCHMARKS.md` for all four modes (raw / hybrid / rerank / hybrid_rerank).
 
-## Benchmark 2: LoCoMo (1,986 QA pairs)
-
-Tests multi-hop reasoning across 10 long conversations (19-32 sessions each, 400-600 dialog turns).
-
-```bash
-# Clone LoCoMo
-git clone https://github.com/snap-research/locomo.git /tmp/locomo
-
-# Run (session granularity — our 60.3% result)
-python benchmarks/locomo_bench.py /tmp/locomo/data/locomo10.json --granularity session
-
-# Dialog granularity (harder — 48.0%)
-python benchmarks/locomo_bench.py /tmp/locomo/data/locomo10.json --granularity dialog
-
-# Higher top-k (77.8% at top-50)
-python benchmarks/locomo_bench.py /tmp/locomo/data/locomo10.json --top-k 50
-
-# Quick test on 1 conversation
-python benchmarks/locomo_bench.py /tmp/locomo/data/locomo10.json --limit 1
-```
-
-**Expected output (session, top-10, full 10 conversations):**
-```
-Avg Recall: 0.603
-Temporal:   0.692
-Time:       ~2 minutes
-```
-
-## Benchmark 3: ConvoMem (Salesforce, 75K+ QA pairs)
+## Benchmark 2: ConvoMem (Salesforce, 75K+ QA pairs)
 
 Tests six categories of conversational memory. Downloads from HuggingFace automatically.
 
@@ -104,7 +76,6 @@ Time:            ~2 minutes
 | Benchmark | What it measures | Why it matters |
 |---|---|---|
 | **LongMemEval** | Can you find a fact buried in 53 sessions? | Tests basic retrieval quality — the "needle in a haystack" |
-| **LoCoMo** | Can you connect facts across conversations over weeks? | Tests multi-hop reasoning and temporal understanding |
 | **ConvoMem** | Does your memory system work at scale? | Tests all memory types: facts, preferences, changes, abstention |
 
 ## Results Files
