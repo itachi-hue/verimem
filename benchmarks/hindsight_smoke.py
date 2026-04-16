@@ -67,7 +67,7 @@ def main() -> int:
         print(
             f"ERROR: Nothing listening on {host}:{port}.\n"
             "On Windows, run the official container (Docker Desktop must be installed and running), e.g.:\n"
-            '  docker run -d --name hindsight -p 8888:8888 -p 9999:9999 ^\n'
+            "  docker run -d --name hindsight -p 8888:8888 -p 9999:9999 ^\n"
             "    -e HINDSIGHT_API_LLM_API_KEY=%GROQ_OR_OPENAI_KEY% ^\n"
             "    -e HINDSIGHT_API_LLM_PROVIDER=groq ^\n"
             r"    -v %USERPROFILE%\.hindsight-docker:/home/hindsight/.pg0 ^"
